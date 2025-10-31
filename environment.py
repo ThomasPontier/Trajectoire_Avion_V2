@@ -10,7 +10,7 @@ class Environment:
     Classe représentant l'espace aérien et les points de navigation
     """
     
-    def __init__(self, size_x=200, size_y=200, size_z=5):
+    def __init__(self, size_x=50, size_y=50, size_z=5):
         """
         Initialise l'environnement
         

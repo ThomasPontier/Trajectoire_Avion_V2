@@ -53,46 +53,166 @@ class FlightSimulatorGUI:
     def _create_ui(self):
         """Crée l'interface utilisateur"""
         
-        # Frame principal
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Configuration du grid
+        # Configuration du grid principal
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(0, weight=1)
         
-        # Panel de contrôle (gauche)
-        self._create_control_panel(main_frame)
+        # Notebook principal avec 4 onglets
+        self.main_notebook = ttk.Notebook(self.root)
+        self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Zone de visualisation (droite)
-        self._create_visualization_panel(main_frame)
+        # Onglet 1: Configuration
+        self._create_config_tab()
         
-    def _create_control_panel(self, parent):
-        """Crée le panel de contrôle avec les paramètres"""
+        # Onglet 2: Vue 3D
+        self._create_3d_view_tab()
         
-        control_frame = ttk.Frame(parent)
-        control_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 10))
+        # Onglet 3: Vues 2D (XY, XZ, YZ)
+        self._create_2d_views_tab()
         
-        # Créer un notebook (onglets)
-        notebook = ttk.Notebook(control_frame)
-        notebook.pack(fill=tk.BOTH, expand=True)
+        # Onglet 4: Paramètres (graphiques)
+        self._create_parameters_tab()
         
-        # Onglet 1: Configuration Environnement
-        env_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(env_frame, text="🌍 Environnement")
+    def _create_config_tab(self):
+        """Crée l'onglet de configuration avec sous-onglets et vue 3D"""
+        
+        config_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(config_frame, text="⚙️ Configuration")
+        
+        # Créer un PanedWindow pour diviser l'écran en 2 parties (gauche et droite)
+        paned = ttk.PanedWindow(config_frame, orient=tk.HORIZONTAL)
+        paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Partie gauche : Notebook de configuration
+        left_frame = ttk.Frame(paned)
+        paned.add(left_frame, weight=1)
+        
+        config_notebook = ttk.Notebook(left_frame)
+        config_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Sous-onglet 1: Environnement
+        env_frame = ttk.Frame(config_notebook, padding="10")
+        config_notebook.add(env_frame, text="🌍 Environnement")
         self._create_environment_config(env_frame)
         
-        # Onglet 2: Gestion des Obstacles
-        obstacles_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(obstacles_frame, text="🚧 Obstacles")
+        # Sous-onglet 2: Obstacles
+        obstacles_frame = ttk.Frame(config_notebook, padding="10")
+        config_notebook.add(obstacles_frame, text="🚧 Obstacles")
         self._create_obstacles_config(obstacles_frame)
         
-        # Onglet 3: Configuration Avion
-        aircraft_frame = ttk.Frame(notebook, padding="10")
-        notebook.add(aircraft_frame, text="✈️ Avion")
+        # Sous-onglet 3: Avion
+        aircraft_frame = ttk.Frame(config_notebook, padding="10")
+        config_notebook.add(aircraft_frame, text="✈️ Avion")
         self._create_aircraft_config(aircraft_frame)
+        
+        # Partie droite : Vue 3D de prévisualisation
+        right_frame = ttk.Frame(paned)
+        paned.add(right_frame, weight=1)
+        
+        # Titre pour la prévisualisation
+        preview_label = ttk.Label(right_frame, text="📦 Prévisualisation 3D", 
+                                 font=('Arial', 12, 'bold'))
+        preview_label.pack(pady=5)
+        
+        # Créer une figure 3D pour la prévisualisation
+        self.fig_3d_config = plt.Figure(figsize=(8, 6))
+        self.ax_3d_config = self.fig_3d_config.add_subplot(111, projection='3d')
+        
+        # Canvas pour la figure 3D dans la configuration
+        self.canvas_3d_config = FigureCanvasTkAgg(self.fig_3d_config, master=right_frame)
+        self.canvas_3d_config.draw()
+        self.canvas_3d_config.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        # Ajouter une barre d'outils de navigation pour la vue config
+        from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+        toolbar_config = NavigationToolbar2Tk(self.canvas_3d_config, right_frame)
+        toolbar_config.update()
+    
+    def _create_3d_view_tab(self):
+        """Crée l'onglet avec la vue 3D"""
+        
+        view_3d_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(view_3d_frame, text="📦 Vue 3D")
+        
+        # Créer la figure 3D
+        self.fig_3d = plt.Figure(figsize=(12, 8))
+        self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
+        
+        # Canvas pour la figure 3D
+        self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=view_3d_frame)
+        self.canvas_3d.draw()
+        self.canvas_3d.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        # Ajouter la barre d'outils de navigation
+        from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+        toolbar_3d = NavigationToolbar2Tk(self.canvas_3d, view_3d_frame)
+        toolbar_3d.update()
+    
+    def _create_2d_views_tab(self):
+        """Crée l'onglet avec les 3 vues 2D orthogonales"""
+        
+        views_2d_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(views_2d_frame, text="📐 Vues 2D")
+        
+        # Créer une figure avec 3 sous-graphiques
+        self.fig_2d = plt.Figure(figsize=(14, 10))
+        
+        # Vue de dessus (XY)
+        self.ax_xy = self.fig_2d.add_subplot(221)
+        self.ax_xy.set_title("Vue de dessus (Plan XY)", fontsize=10, fontweight='bold')
+        self.ax_xy.set_xlabel("X (km)")
+        self.ax_xy.set_ylabel("Y (km)")
+        self.ax_xy.grid(True, alpha=0.3)
+        self.ax_xy.set_aspect('equal')
+        
+        # Vue de face (XZ)
+        self.ax_xz = self.fig_2d.add_subplot(223)
+        self.ax_xz.set_title("Vue de face (Plan XZ)", fontsize=10, fontweight='bold')
+        self.ax_xz.set_xlabel("X (km)")
+        self.ax_xz.set_ylabel("Z (altitude, km)")
+        self.ax_xz.grid(True, alpha=0.3)
+        
+        # Vue de côté (YZ)
+        self.ax_yz = self.fig_2d.add_subplot(222)
+        self.ax_yz.set_title("Vue de côté (Plan YZ)", fontsize=10, fontweight='bold')
+        self.ax_yz.set_xlabel("Y (km)")
+        self.ax_yz.set_ylabel("Z (altitude, km)")
+        self.ax_yz.grid(True, alpha=0.3)
+        
+        # Espace pour légende
+        self.ax_legend = self.fig_2d.add_subplot(224)
+        self.ax_legend.axis('off')
+        
+        self.fig_2d.tight_layout(pad=3.0)
+        
+        # Canvas pour les vues 2D
+        self.canvas_2d = FigureCanvasTkAgg(self.fig_2d, master=views_2d_frame)
+        self.canvas_2d.draw()
+        self.canvas_2d.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        # Ajouter la barre d'outils de navigation (pour zoom)
+        from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+        toolbar_2d = NavigationToolbar2Tk(self.canvas_2d, views_2d_frame)
+        toolbar_2d.update()
+    
+    def _create_parameters_tab(self):
+        """Crée l'onglet avec les graphiques de paramètres"""
+        
+        params_frame = ttk.Frame(self.main_notebook)
+        self.main_notebook.add(params_frame, text="📊 Paramètres")
+        
+        # Créer la figure pour les paramètres
+        self.fig_params = plt.Figure(figsize=(14, 8))
+        
+        # Canvas
+        self.canvas_params = FigureCanvasTkAgg(self.fig_params, master=params_frame)
+        self.canvas_params.draw()
+        self.canvas_params.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        
+        # Barre d'outils
+        from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+        toolbar_params = NavigationToolbar2Tk(self.canvas_params, params_frame)
+        toolbar_params.update()
         
     def _create_environment_config(self, parent):
         """Crée la configuration de l'environnement"""
@@ -376,10 +496,33 @@ class FlightSimulatorGUI:
         ttk.Entry(control_frame, textvariable=self.speed_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
-        # Cap initial
+        # Cap initial avec description détaillée
         ttk.Label(control_frame, text="Cap initial (°):").grid(row=row, column=0, sticky=tk.W, pady=5)
         self.heading_var = tk.DoubleVar(value=90.0)
-        ttk.Entry(control_frame, textvariable=self.heading_var, width=15).grid(row=row, column=1, pady=5)
+        heading_entry = ttk.Entry(control_frame, textvariable=self.heading_var, width=15)
+        heading_entry.grid(row=row, column=1, pady=5)
+        row += 1
+        
+        # Aide visuelle pour le cap
+        ttk.Label(control_frame, text="0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest", 
+                 font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
+        row += 1
+        
+        # Séparateur
+        ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
+        row += 1
+        
+        # Options de trajectoire
+        ttk.Label(control_frame, text="Options Trajectoire", font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        row += 1
+        
+        self.use_realistic_turns_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(control_frame, text="Virages réalistes (rejoindre axe d'approche)", 
+                       variable=self.use_realistic_turns_var).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        row += 1
+        
+        ttk.Label(control_frame, text="Active le calcul de trajectoire avec virages\nrespectant le rayon de courbure minimum", 
+                 font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
         row += 1
         
         # Séparateur
@@ -410,33 +553,7 @@ class FlightSimulatorGUI:
         ttk.Button(button_frame, text="Lancer Simulation", command=self._run_simulation).pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Réinitialiser", command=self._reset).pack(fill=tk.X, pady=5)
         
-    def _create_visualization_panel(self, parent):
-        """Crée le panel de visualisation"""
-        
-        viz_frame = ttk.Frame(parent)
-        viz_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
-        viz_frame.columnconfigure(0, weight=1)
-        viz_frame.rowconfigure(0, weight=1)
-        viz_frame.rowconfigure(1, weight=1)
-        
-        # Visualisation 3D avec marges pour la légende
-        self.fig_3d = plt.Figure(figsize=(10, 6))
-        self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
-        
-        # Ajuster les marges pour faire de la place à la légende
-        self.fig_3d.subplots_adjust(right=0.85)
-        
-        self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=viz_frame)
-        self.canvas_3d.get_tk_widget().grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
-        
-        # Graphiques de paramètres
-        self.fig_params = plt.Figure(figsize=(8, 4))
-        self.canvas_params = FigureCanvasTkAgg(self.fig_params, master=viz_frame)
-        self.canvas_params.get_tk_widget().grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Affichage initial de l'environnement
-        self._draw_environment()
-    
+
     def _update_environment(self):
         """Crée ou met à jour l'environnement avec les valeurs par défaut ou personnalisées"""
         if self.environment is None:
@@ -524,6 +641,7 @@ class FlightSimulatorGUI:
             # Mettre à jour l'affichage
             self._update_environment()
             self._draw_environment()
+            self._draw_config_preview()  # Mettre à jour la preview de configuration
             
             # Message de succès
             self.env_info_label.config(
@@ -750,6 +868,7 @@ class FlightSimulatorGUI:
             
             # Redessiner l'environnement
             self._draw_environment()
+            self._draw_config_preview()  # Mettre à jour la preview de configuration
             
             # Sauvegarde automatique
             self._save_config()
@@ -769,6 +888,7 @@ class FlightSimulatorGUI:
         removed = self.cylinders.pop()
         self._update_cylinders_list()
         self._draw_environment()
+        self._draw_config_preview()  # Mettre à jour la preview de configuration
         self._save_config()  # Sauvegarde automatique
         
         messagebox.showinfo("Succès", f"Cylindre supprimé:\nPosition: ({removed['x']:.1f}, {removed['y']:.1f}) km")
@@ -783,6 +903,7 @@ class FlightSimulatorGUI:
         self.cylinders.clear()
         self._update_cylinders_list()
         self._draw_environment()
+        self._draw_config_preview()  # Mettre à jour la preview de configuration
         self._save_config()  # Sauvegarde automatique
         
         messagebox.showinfo("Succès", f"{count} cylindre(s) supprimé(s)")
@@ -810,6 +931,7 @@ class FlightSimulatorGUI:
         self.cylinders.pop(index)
         self._update_cylinders_list()
         self._draw_environment()
+        self._draw_config_preview()  # Mettre à jour la preview de configuration
         
         messagebox.showinfo("Édition", "Cylindre chargé dans les champs.\nModifiez les valeurs puis cliquez sur 'Ajouter ce Cylindre'")
     
@@ -842,6 +964,79 @@ class FlightSimulatorGUI:
                 self.cylinders_listbox.insert(tk.END, 
                     f"#{i}: X={cyl['x']:.1f} Y={cyl['y']:.1f} R={cyl['radius']:.1f} H={cyl['height']:.1f}")
         
+    def _draw_config_preview(self):
+        """Dessine la prévisualisation 3D dans l'onglet Configuration"""
+        
+        if self.environment is None:
+            return
+        
+        self.ax_3d_config.clear()
+        
+        # Configuration de l'affichage
+        self.ax_3d_config.set_xlim(0, self.environment.size_x)
+        self.ax_3d_config.set_ylim(0, self.environment.size_y)
+        self.ax_3d_config.set_zlim(0, self.environment.size_z)
+        
+        self.ax_3d_config.set_xlabel('X (km)', fontsize=8)
+        self.ax_3d_config.set_ylabel('Y (km)', fontsize=8)
+        self.ax_3d_config.set_zlabel('Z (km)', fontsize=8)
+        
+        # Dessiner l'aéroport
+        airport = self.environment.airport_position
+        self.ax_3d_config.scatter([airport[0]], [airport[1]], [airport[2]], 
+                          c='red', marker='s', s=150, label='Aéroport')
+        
+        # Dessiner le point FAF
+        faf = self.environment.faf_position
+        self.ax_3d_config.scatter([faf[0]], [faf[1]], [faf[2]], 
+                          c='blue', marker='^', s=100, label='Point FAF')
+        
+        # Dessiner l'axe d'approche
+        direction = faf - airport
+        direction_norm = np.linalg.norm(direction[:2])
+        
+        if direction_norm > 0:
+            direction_unit = direction / direction_norm
+            max_distance = max(self.environment.size_x, self.environment.size_y) * 2
+            end_point = airport + direction_unit * max_distance
+            
+            self.ax_3d_config.plot([airport[0], end_point[0]], 
+                           [airport[1], end_point[1]], 
+                           [airport[2], end_point[2]], 
+                           'k--', linewidth=1, alpha=0.5, label='Axe d\'approche')
+        
+        # Si l'avion est positionné
+        if self.aircraft:
+            self.ax_3d_config.scatter([self.aircraft.position[0]], [self.aircraft.position[1]], 
+                             [self.aircraft.position[2]], c='green', marker='o', s=80, 
+                             label='Avion')
+            
+            # Dessiner un vecteur montrant la direction de l'avion
+            heading_rad = np.radians(self.aircraft.heading)
+            direction_length = min(self.environment.size_x, self.environment.size_y) * 0.08
+            dx = direction_length * np.sin(heading_rad)
+            dy = direction_length * np.cos(heading_rad)
+            
+            self.ax_3d_config.quiver(self.aircraft.position[0], self.aircraft.position[1], 
+                            self.aircraft.position[2], dx, dy, 0, 
+                            color='green', arrow_length_ratio=0.3, linewidth=1.5, alpha=0.7)
+        
+        # Dessiner les cylindres (obstacles)
+        if hasattr(self, 'cylinders') and self.cylinders:
+            for cyl in self.cylinders:
+                self._draw_cylinder_on_ax(self.ax_3d_config, cyl['x'], cyl['y'], 
+                                         cyl['radius'], cyl['height'])
+            
+            # Ajouter une entrée de légende pour les cylindres
+            self.ax_3d_config.plot([], [], [], 'r-', linewidth=2, alpha=0.5, 
+                          label=f'Cylindres ({len(self.cylinders)})')
+        
+        # Légende
+        self.ax_3d_config.legend(loc='upper right', fontsize=7, framealpha=0.8)
+        self.ax_3d_config.set_title("Configuration de l'Environnement", fontsize=10, fontweight='bold')
+        
+        self.canvas_3d_config.draw()
+    
     def _draw_environment(self):
         """Dessine l'environnement 3D"""
         
@@ -902,11 +1097,149 @@ class FlightSimulatorGUI:
             self.ax_3d.scatter([self.aircraft.position[0]], [self.aircraft.position[1]], 
                              [self.aircraft.position[2]], c='green', marker='o', s=100, 
                              label='Avion')
+            
+            # Dessiner un vecteur montrant la direction de l'avion
+            heading_rad = np.radians(self.aircraft.heading)
+            # Direction: sin(heading) pour X (Est), cos(heading) pour Y (Nord)
+            direction_length = min(self.environment.size_x, self.environment.size_y) * 0.1
+            dx = direction_length * np.sin(heading_rad)
+            dy = direction_length * np.cos(heading_rad)
+            
+            self.ax_3d.quiver(self.aircraft.position[0], self.aircraft.position[1], self.aircraft.position[2],
+                            dx, dy, 0, color='green', arrow_length_ratio=0.3, linewidth=2, alpha=0.7)
         
         # Si une trajectoire existe
         if self.trajectory is not None:
-            # Vérifier si on a un point de début de descente et transition
-            if self.trajectory_params and 'descent_start_index' in self.trajectory_params:
+            print(f"\n🎨 AFFICHAGE DE LA TRAJECTOIRE")
+            print(f"   Nombre de points: {len(self.trajectory)}")
+            print(f"   Forme: {self.trajectory.shape}")
+            print(f"   Paramètres disponibles: {list(self.trajectory_params.keys()) if self.trajectory_params else 'Aucun'}")
+            
+            # Vérifier si c'est une nouvelle trajectoire avec virages et segment initial
+            if self.trajectory_params and 'turn_radius' in self.trajectory_params:
+                print(f"   📍 Type: Trajectoire avec VIRAGE (rayon {self.trajectory_params['turn_radius']:.3f} km)")
+                
+                # Vérifier s'il y a un segment initial (vol dans le cap initial)
+                if 'initial_segment_end_index' in self.trajectory_params:
+                    print(f"   📍 Trajectoire en 2 phases: Vol initial → Virage jusqu'au FAF")
+                    initial_end_idx = self.trajectory_params['initial_segment_end_index']
+                    turn_end_idx = self.trajectory_params['turn_segment_end_index']
+                    turn_start = self.trajectory_params.get('turn_start_point', None)
+                    intercept = self.trajectory_params['intercept_point']
+                    
+                    # Phase 1: Vol initial dans la direction du cap (en bleu marine)
+                    if initial_end_idx > 0:
+                        print(f"   🟦 Dessin VOL INITIAL: {initial_end_idx} points en BLEU MARINE")
+                        self.ax_3d.plot(self.trajectory[:initial_end_idx, 0], 
+                                       self.trajectory[:initial_end_idx, 1], 
+                                       self.trajectory[:initial_end_idx, 2], 
+                                       'navy', linewidth=2.5, label='Vol initial (cap)', alpha=0.9)
+                        
+                        # Marquer le point de début du virage
+                        if turn_start is not None:
+                            self.ax_3d.scatter([turn_start[0]], [turn_start[1]], [self.trajectory[initial_end_idx-1, 2]], 
+                                              c='purple', marker='*', s=200, label='Début virage', zorder=5, 
+                                              edgecolors='darkviolet', linewidths=1.5)
+                            print(f"   ✓ Point début virage marqué: ({turn_start[0]:.1f}, {turn_start[1]:.1f})")
+                    
+                    # Phase 2: Virage progressif jusqu'au FAF avec alignement sur piste
+                    # Diviser le virage en deux parties : virage + alignement
+                    if turn_end_idx > initial_end_idx:
+                        n_turn_points = turn_end_idx - initial_end_idx
+                        
+                        # 60% du virage en magenta (virage progressif)
+                        split_idx = initial_end_idx + int(n_turn_points * 0.6)
+                        print(f"   � Dessin VIRAGE PROGRESSIF: {split_idx - initial_end_idx} points en MAGENTA")
+                        self.ax_3d.plot(self.trajectory[initial_end_idx:split_idx, 0], 
+                                       self.trajectory[initial_end_idx:split_idx, 1], 
+                                       self.trajectory[initial_end_idx:split_idx, 2], 
+                                       'magenta', linewidth=2.5, label='Virage progressif', alpha=0.9)
+                        
+                        # 40% du virage en vert (alignement final)
+                        print(f"   🟢 Dessin ALIGNEMENT PISTE: {turn_end_idx - split_idx} points en VERT")
+                        self.ax_3d.plot(self.trajectory[split_idx:turn_end_idx, 0], 
+                                       self.trajectory[split_idx:turn_end_idx, 1], 
+                                       self.trajectory[split_idx:turn_end_idx, 2], 
+                                       'limegreen', linewidth=2.5, label='Alignement piste→FAF', alpha=0.9)
+                    
+                    # Le virage se termine au FAF - trajectoire complète
+                    print(f"   ✅ Trajectoire complète: l'avion arrive au FAF aligné avec la piste")
+                    
+                else:
+                    # Ancienne version sans segment initial (ne devrait plus arriver)
+                    print(f"   ⚠️ Version ancienne de trajectoire détectée")
+            
+            # Nouvelle trajectoire avec alignement progressif sur l'axe piste
+            elif self.trajectory_params and 'runway_alignment' in self.trajectory_params:
+                print(f"   📍 Type: Trajectoire avec ALIGNEMENT PROGRESSIF sur axe piste")
+                initial_end = self.trajectory_params.get('initial_segment_end', 0)
+                turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
+                intercept = self.trajectory_params.get('intercept_point', None)
+                
+                # Phase 1: Vol initial (bleu marine)
+                if initial_end > 0:
+                    print(f"   🟦 Dessin VOL INITIAL: {initial_end} points en BLEU MARINE")
+                    self.ax_3d.plot(self.trajectory[:initial_end, 0], 
+                                   self.trajectory[:initial_end, 1], 
+                                   self.trajectory[:initial_end, 2], 
+                                   'navy', linewidth=2.5, label='Vol initial (cap)', alpha=0.9)
+                
+                # Phase 2: Virage progressif (magenta/violet)
+                if turn_end > initial_end:
+                    n_turn = turn_end - initial_end
+                    print(f"   🟣 Dessin VIRAGE PROGRESSIF: {n_turn} points en MAGENTA")
+                    self.ax_3d.plot(self.trajectory[initial_end:turn_end, 0], 
+                                   self.trajectory[initial_end:turn_end, 1], 
+                                   self.trajectory[initial_end:turn_end, 2], 
+                                   'magenta', linewidth=2.5, label='Alignement progressif', alpha=0.9)
+                    
+                    # Marquer le point d'interception (aligné avec la piste)
+                    if intercept is not None:
+                        self.ax_3d.scatter([intercept[0]], [intercept[1]], [self.trajectory[turn_end-1, 2]], 
+                                          c='purple', marker='D', s=150, label='Aligné avec piste', zorder=5, 
+                                          edgecolors='darkviolet', linewidths=1.5)
+                        print(f"   ✓ Point alignement marqué: ({intercept[0]:.1f}, {intercept[1]:.1f})")
+                
+                # Phase 3: Sur l'axe piste vers FAF (vert/orange selon altitude)
+                if turn_end < len(self.trajectory):
+                    altitudes = self.trajectory[turn_end:, 2]
+                    if len(altitudes) > 1:
+                        altitude_changes = np.diff(altitudes)
+                        descent_start = turn_end
+                        
+                        for i, change in enumerate(altitude_changes):
+                            if abs(change) > 0.001:
+                                descent_start = turn_end + i
+                                break
+                        
+                        # Approche en palier
+                        if descent_start > turn_end:
+                            n_level = descent_start - turn_end
+                            print(f"   🟢 Dessin APPROCHE SUR PISTE: {n_level} points en VERT")
+                            self.ax_3d.plot(self.trajectory[turn_end:descent_start, 0], 
+                                           self.trajectory[turn_end:descent_start, 1], 
+                                           self.trajectory[turn_end:descent_start, 2], 
+                                           'g-', linewidth=2.5, label='Sur axe piste', alpha=0.9)
+                        
+                        # Descente
+                        if descent_start < len(self.trajectory):
+                            n_descent = len(self.trajectory) - descent_start
+                            print(f"   🟠 Dessin DESCENTE: {n_descent} points en ORANGE")
+                            self.ax_3d.plot(self.trajectory[descent_start:, 0], 
+                                           self.trajectory[descent_start:, 1], 
+                                           self.trajectory[descent_start:, 2], 
+                                           'orangered', linewidth=2.5, label='Descente', alpha=0.9)
+                    else:
+                        # Tout sur l'axe
+                        n_runway = len(self.trajectory) - turn_end
+                        print(f"   🟢 Dessin SUR PISTE: {n_runway} points en VERT")
+                        self.ax_3d.plot(self.trajectory[turn_end:, 0], 
+                                       self.trajectory[turn_end:, 1], 
+                                       self.trajectory[turn_end:, 2], 
+                                       'g-', linewidth=2.5, label='Sur axe piste', alpha=0.9)
+            
+            # Ancienne trajectoire avec descente
+            elif self.trajectory_params and 'descent_start_index' in self.trajectory_params:
                 descent_idx = self.trajectory_params['descent_start_index']
                 transition_end_idx = self.trajectory_params.get('transition_end_index', descent_idx)
                 
@@ -942,8 +1275,11 @@ class FlightSimulatorGUI:
                                    'orangered', linewidth=2.5, label='Descente', alpha=0.9)
             else:
                 # Trajectoire simple (lissée)
+                print(f"   🟢 Dessin TRAJECTOIRE SIMPLE: {len(self.trajectory)} points en VERT")
                 self.ax_3d.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
                                self.trajectory[:, 2], 'g-', linewidth=2.5, label='Trajectoire', alpha=0.9)
+            
+            print(f"✅ TRAJECTOIRE AFFICHÉE AVEC SUCCÈS\n")
         
         # Dessiner les cylindres (obstacles) s'ils existent
         if hasattr(self, 'cylinders') and self.cylinders:
@@ -959,10 +1295,189 @@ class FlightSimulatorGUI:
                          edgecolor='black', fancybox=True, shadow=True)
         self.ax_3d.set_title("Espace Aérien 3D - Version 1.1+ (Trajectoire Lissée)", pad=20)
         
+        print(f"🖼️  Rafraîchissement du canvas 3D...")
         self.canvas_3d.draw()
+        print(f"✅ Canvas 3D rafraîchi!\n")
+        
+        # Dessiner aussi les vues 2D
+        self._draw_2d_views()
     
-    def _draw_cylinder(self, x, y, radius, height):
-        """Dessine un cylindre (obstacle) dans l'espace 3D"""
+    def _draw_2d_views(self):
+        """Dessine les vues 2D orthogonales (XY, XZ, YZ)"""
+        
+        if self.environment is None:
+            return
+        
+        # Nettoyer tous les axes
+        self.ax_xy.clear()
+        self.ax_xz.clear()
+        self.ax_yz.clear()
+        self.ax_legend.clear()
+        self.ax_legend.axis('off')
+        
+        # Réappliquer les labels et grilles
+        self.ax_xy.set_title("Vue de dessus (Plan XY)", fontsize=10, fontweight='bold')
+        self.ax_xy.set_xlabel("X (km)")
+        self.ax_xy.set_ylabel("Y (km)")
+        self.ax_xy.grid(True, alpha=0.3)
+        self.ax_xy.set_aspect('equal')
+        
+        self.ax_xz.set_title("Vue de face (Plan XZ)", fontsize=10, fontweight='bold')
+        self.ax_xz.set_xlabel("X (km)")
+        self.ax_xz.set_ylabel("Z (altitude, km)")
+        self.ax_xz.grid(True, alpha=0.3)
+        
+        self.ax_yz.set_title("Vue de côté (Plan YZ)", fontsize=10, fontweight='bold')
+        self.ax_yz.set_xlabel("Y (km)")
+        self.ax_yz.set_ylabel("Z (altitude, km)")
+        self.ax_yz.grid(True, alpha=0.3)
+        
+        # Définir les limites
+        self.ax_xy.set_xlim(0, self.environment.size_x)
+        self.ax_xy.set_ylim(0, self.environment.size_y)
+        self.ax_xz.set_xlim(0, self.environment.size_x)
+        self.ax_xz.set_ylim(0, self.environment.size_z)
+        self.ax_yz.set_xlim(0, self.environment.size_y)
+        self.ax_yz.set_ylim(0, self.environment.size_z)
+        
+        # Dessiner l'aéroport
+        airport = self.environment.airport_position
+        self.ax_xy.scatter(airport[0], airport[1], c='red', marker='s', s=200, label='Aéroport', zorder=5)
+        self.ax_xz.scatter(airport[0], airport[2], c='red', marker='s', s=200, zorder=5)
+        self.ax_yz.scatter(airport[1], airport[2], c='red', marker='s', s=200, zorder=5)
+        
+        # Dessiner le FAF
+        faf = self.environment.faf_position
+        self.ax_xy.scatter(faf[0], faf[1], c='blue', marker='^', s=150, label='FAF', zorder=5)
+        self.ax_xz.scatter(faf[0], faf[2], c='blue', marker='^', s=150, zorder=5)
+        self.ax_yz.scatter(faf[1], faf[2], c='blue', marker='^', s=150, zorder=5)
+        
+        # Dessiner l'axe d'approche
+        direction = faf - airport
+        direction_norm = np.linalg.norm(direction[:2])
+        if direction_norm > 0:
+            direction_unit = direction / direction_norm
+            max_distance = max(self.environment.size_x, self.environment.size_y) * 2
+            end_point = airport + direction_unit * max_distance
+            
+            self.ax_xy.plot([airport[0], end_point[0]], [airport[1], end_point[1]], 
+                           'k--', linewidth=1.5, alpha=0.6, label='Axe d\'approche')
+            self.ax_xz.plot([airport[0], end_point[0]], [airport[2], end_point[2]], 
+                           'k--', linewidth=1.5, alpha=0.6)
+            self.ax_yz.plot([airport[1], end_point[1]], [airport[2], end_point[2]], 
+                           'k--', linewidth=1.5, alpha=0.6)
+        
+        # Dessiner l'avion si positionné
+        if self.aircraft:
+            pos = self.aircraft.position
+            self.ax_xy.scatter(pos[0], pos[1], c='green', marker='o', s=100, label='Avion', zorder=5)
+            self.ax_xz.scatter(pos[0], pos[2], c='green', marker='o', s=100, zorder=5)
+            self.ax_yz.scatter(pos[1], pos[2], c='green', marker='o', s=100, zorder=5)
+            
+            # Flèche de direction sur la vue XY
+            heading_rad = np.radians(self.aircraft.heading)
+            arrow_length = min(self.environment.size_x, self.environment.size_y) * 0.05
+            dx = arrow_length * np.sin(heading_rad)
+            dy = arrow_length * np.cos(heading_rad)
+            self.ax_xy.arrow(pos[0], pos[1], dx, dy, head_width=1, head_length=0.5, 
+                           fc='green', ec='green', alpha=0.7, linewidth=2, zorder=4)
+        
+        # Dessiner les cylindres
+        if hasattr(self, 'cylinders') and self.cylinders:
+            for cyl in self.cylinders:
+                # Vue de dessus (XY) - cercle plein
+                circle_xy = plt.Circle((cyl['x'], cyl['y']), cyl['radius'], 
+                                      color='red', alpha=0.3, label='Cylindre' if cyl == self.cylinders[0] else '')
+                self.ax_xy.add_patch(circle_xy)
+                
+                # Vue de face (XZ) - rectangle
+                rect_width = cyl['radius'] * 2
+                self.ax_xz.add_patch(plt.Rectangle((cyl['x'] - cyl['radius'], 0), 
+                                                   rect_width, cyl['height'], 
+                                                   color='red', alpha=0.3))
+                
+                # Vue de côté (YZ) - rectangle
+                self.ax_yz.add_patch(plt.Rectangle((cyl['y'] - cyl['radius'], 0), 
+                                                   rect_width, cyl['height'], 
+                                                   color='red', alpha=0.3))
+        
+        # Dessiner la trajectoire si elle existe
+        if self.trajectory is not None:
+            # Vue XY (dessus)
+            if self.trajectory_params and 'runway_alignment' in self.trajectory_params:
+                # Nouvelle trajectoire avec alignement piste (3 phases)
+                initial_end = self.trajectory_params.get('initial_segment_end', 0)
+                turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
+                
+                # Phase 1: Vol initial (bleu marine)
+                if initial_end > 0:
+                    self.ax_xy.plot(self.trajectory[:initial_end, 0], 
+                                   self.trajectory[:initial_end, 1], 
+                                   'navy', linewidth=2, label='Vol initial', alpha=0.9)
+                
+                # Phase 2: Virage progressif (magenta)
+                if turn_end > initial_end:
+                    self.ax_xy.plot(self.trajectory[initial_end:turn_end, 0], 
+                                   self.trajectory[initial_end:turn_end, 1], 
+                                   'magenta', linewidth=2, label='Alignement', alpha=0.9)
+                
+                # Phase 3: Sur axe piste (vert)
+                if turn_end < len(self.trajectory):
+                    self.ax_xy.plot(self.trajectory[turn_end:, 0], 
+                                   self.trajectory[turn_end:, 1], 
+                                   'g-', linewidth=2, label='Sur piste', alpha=0.9)
+            
+            elif self.trajectory_params and 'turn_radius' in self.trajectory_params:
+                # Vérifier s'il y a un segment initial (2 phases: vol initial → virage jusqu'au FAF)
+                if 'initial_segment_end_index' in self.trajectory_params:
+                    initial_end = self.trajectory_params['initial_segment_end_index']
+                    turn_end = self.trajectory_params['turn_segment_end_index']
+                    
+                    # Phase 1: Vol initial (bleu marine)
+                    if initial_end > 0:
+                        self.ax_xy.plot(self.trajectory[:initial_end, 0], 
+                                       self.trajectory[:initial_end, 1], 
+                                       'navy', linewidth=2, label='Vol initial', alpha=0.9)
+                    
+                    # Phase 2: Virage progressif jusqu'au FAF (divisé en 2 couleurs)
+                    if turn_end > initial_end:
+                        # 60% virage en magenta, 40% alignement en vert
+                        split_idx = initial_end + int((turn_end - initial_end) * 0.6)
+                        
+                        self.ax_xy.plot(self.trajectory[initial_end:split_idx, 0], 
+                                       self.trajectory[initial_end:split_idx, 1], 
+                                       'magenta', linewidth=2, label='Virage progressif', alpha=0.9)
+                        
+                        self.ax_xy.plot(self.trajectory[split_idx:turn_end, 0], 
+                                       self.trajectory[split_idx:turn_end, 1], 
+                                       'limegreen', linewidth=2, label='Alignement→FAF', alpha=0.9)
+                else:
+                    # Trajectoire simple (pas de phases)
+                    self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
+                                   'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+            else:
+                self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
+                               'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+            
+            # Vue XZ (face)
+            self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 
+                           'g-', linewidth=2, alpha=0.9)
+            
+            # Vue YZ (côté)
+            self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 
+                           'g-', linewidth=2, alpha=0.9)
+        
+        # Légende commune
+        handles, labels = self.ax_xy.get_legend_handles_labels()
+        if handles:
+            self.ax_legend.legend(handles, labels, loc='center', fontsize=10, framealpha=0.9)
+        
+        print(f"🖼️  Rafraîchissement des vues 2D...")
+        self.canvas_2d.draw()
+        print(f"✅ Vues 2D rafraîchies!\n")
+    
+    def _draw_cylinder_on_ax(self, ax, x, y, radius, height):
+        """Dessine un cylindre (obstacle) sur un axe 3D donné"""
         # Créer le cylindre
         z = np.linspace(0, height, 20)
         theta = np.linspace(0, 2 * np.pi, 30)
@@ -971,58 +1486,97 @@ class FlightSimulatorGUI:
         y_grid = radius * np.sin(theta_grid) + y
         
         # Dessiner la surface du cylindre
-        self.ax_3d.plot_surface(x_grid, y_grid, z_grid, alpha=0.3, color='red', 
-                               edgecolor='darkred', linewidth=0.5)
+        ax.plot_surface(x_grid, y_grid, z_grid, alpha=0.3, color='red', 
+                       edgecolor='darkred', linewidth=0.5)
         
         # Dessiner le cercle du sommet
         theta_top = np.linspace(0, 2 * np.pi, 30)
         x_top = radius * np.cos(theta_top) + x
         y_top = radius * np.sin(theta_top) + y
         z_top = np.ones_like(theta_top) * height
-        self.ax_3d.plot(x_top, y_top, z_top, 'r-', linewidth=2, alpha=0.7)
+        ax.plot(x_top, y_top, z_top, 'r-', linewidth=2, alpha=0.7)
+    
+    def _draw_cylinder(self, x, y, radius, height):
+        """Dessine un cylindre (obstacle) dans l'espace 3D principal"""
+        self._draw_cylinder_on_ax(self.ax_3d, x, y, radius, height)
         
-    def _draw_parameters(self, time, altitude, slope, speed):
+    def _draw_parameters(self, time, altitude, slope, speed, heading=None, turn_rate=None):
         """Dessine les graphiques de paramètres"""
         
         self.fig_params.clear()
         
+        # Déterminer le nombre de sous-graphiques (4 si on a le taux de virage)
+        n_plots = 4 if turn_rate is not None else 3
+        
         # Graphique 1: Altitude
-        ax1 = self.fig_params.add_subplot(131)
+        ax1 = self.fig_params.add_subplot(2, 2, 1)
         ax1.plot(time, altitude, 'b-', linewidth=2, label='Altitude')
-        ax1.set_xlabel('Temps (s)')
-        ax1.set_ylabel('Altitude (km)')
-        ax1.set_title('Altitude au cours du temps')
+        ax1.set_xlabel('Temps (s)', fontsize=9)
+        ax1.set_ylabel('Altitude (km)', fontsize=9)
+        ax1.set_title('Altitude au cours du temps', fontsize=10, fontweight='bold')
         ax1.grid(True, alpha=0.3)
-        ax1.legend()
+        ax1.legend(fontsize=8)
         
         # Graphique 2: Pente avec limites
-        ax2 = self.fig_params.add_subplot(132)
+        ax2 = self.fig_params.add_subplot(2, 2, 2)
         ax2.plot(time, slope, 'r-', linewidth=2, label='Pente actuelle')
-        ax2.set_xlabel('Temps (s)')
-        ax2.set_ylabel('Pente (°)')
-        ax2.set_title('Pente au cours du temps')
+        ax2.set_xlabel('Temps (s)', fontsize=9)
+        ax2.set_ylabel('Pente (°)', fontsize=9)
+        ax2.set_title('Pente au cours du temps', fontsize=10, fontweight='bold')
         ax2.grid(True, alpha=0.3)
         ax2.axhline(y=0, color='k', linestyle='--', alpha=0.3)
         
         # Afficher les limites de pente si l'avion existe
         if self.aircraft:
             ax2.axhline(y=self.aircraft.max_climb_slope, color='green', 
-                       linestyle='--', alpha=0.5, label=f'Pente max montée ({self.aircraft.max_climb_slope}°)')
+                       linestyle='--', alpha=0.5, label=f'Montée max ({self.aircraft.max_climb_slope}°)')
             ax2.axhline(y=self.aircraft.max_descent_slope, color='red', 
-                       linestyle='--', alpha=0.5, label=f'Pente max descente ({self.aircraft.max_descent_slope}°)')
+                       linestyle='--', alpha=0.5, label=f'Descente max ({self.aircraft.max_descent_slope}°)')
         
         ax2.legend(fontsize=7)
         
         # Graphique 3: Vitesse
-        ax3 = self.fig_params.add_subplot(133)
+        ax3 = self.fig_params.add_subplot(2, 2, 3)
         ax3.plot(time, speed, 'g-', linewidth=2, label='Vitesse')
-        ax3.set_xlabel('Temps (s)')
-        ax3.set_ylabel('Vitesse (km/h)')
-        ax3.set_title('Vitesse au cours du temps')
+        ax3.set_xlabel('Temps (s)', fontsize=9)
+        ax3.set_ylabel('Vitesse (km/h)', fontsize=9)
+        ax3.set_title('Vitesse au cours du temps', fontsize=10, fontweight='bold')
         ax3.grid(True, alpha=0.3)
-        ax3.legend()
+        ax3.legend(fontsize=8)
         
-        self.fig_params.tight_layout()
+        # Graphique 4: Angle de virage (taux de virage) - NOUVEAU
+        if turn_rate is not None:
+            ax4 = self.fig_params.add_subplot(2, 2, 4)
+            ax4.plot(time, turn_rate, 'purple', linewidth=2, label='Taux de virage')
+            ax4.set_xlabel('Temps (s)', fontsize=9)
+            ax4.set_ylabel('Taux de virage (°/s)', fontsize=9)
+            ax4.set_title('Angle de Virage (Plan XY)', fontsize=10, fontweight='bold')
+            ax4.grid(True, alpha=0.3)
+            ax4.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+            
+            # Calculer et afficher les statistiques
+            max_turn = np.max(np.abs(turn_rate))
+            avg_turn = np.mean(np.abs(turn_rate[turn_rate != 0])) if np.any(turn_rate != 0) else 0
+            
+            stats_text = f'Max: {max_turn:.2f}°/s\nMoy: {avg_turn:.2f}°/s'
+            ax4.text(0.98, 0.97, stats_text, transform=ax4.transAxes,
+                    verticalalignment='top', horizontalalignment='right',
+                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5),
+                    fontsize=8)
+            
+            # Zones de virage (fond coloré)
+            positive_mask = turn_rate > 0.1
+            negative_mask = turn_rate < -0.1
+            if np.any(positive_mask):
+                ax4.fill_between(time, 0, turn_rate, where=positive_mask, 
+                                alpha=0.2, color='blue', label='Virage gauche')
+            if np.any(negative_mask):
+                ax4.fill_between(time, 0, turn_rate, where=negative_mask, 
+                                alpha=0.2, color='red', label='Virage droite')
+            
+            ax4.legend(fontsize=7, loc='upper left')
+        
+        self.fig_params.tight_layout(pad=2.0)
         self.canvas_params.draw()
         
     def _on_aircraft_type_changed(self, event=None):
@@ -1073,6 +1627,10 @@ class FlightSimulatorGUI:
             
             # Mettre à jour l'affichage
             self._draw_environment()
+            self._draw_config_preview()  # Mettre à jour la preview de configuration
+            
+            # Sauvegarde automatique de la position
+            self._save_config()
             
             messagebox.showinfo("Succès", f"Position de l'avion validée!\n"
                                         f"Type: {self.aircraft.specs['name']}\n"
@@ -1089,22 +1647,49 @@ class FlightSimulatorGUI:
             return
         
         try:
-            # Calculer la trajectoire
+            # Calculer la trajectoire selon l'option choisie
             calculator = TrajectoryCalculator(self.environment)
-            self.trajectory, self.trajectory_params = calculator.calculate_trajectory(self.aircraft)
+            
+            if self.use_realistic_turns_var.get():
+                # Trajectoire avec virages réalistes
+                print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
+                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(self.aircraft)
+            else:
+                # Trajectoire directe classique
+                print("\n🔧 Calcul: Trajectoire DIRECTE...")
+                self.trajectory, self.trajectory_params = calculator.calculate_trajectory(self.aircraft)
+            
+            print(f"\n📦 Trajectoire calculée: {len(self.trajectory)} points stockés dans self.trajectory")
+            print(f"📦 Paramètres stockés: {list(self.trajectory_params.keys())}")
             
             # Mettre à jour les visualisations
+            print(f"\n🎨 Appel de _draw_environment() pour afficher la trajectoire...")
             self._draw_environment()
             self._draw_parameters(self.trajectory_params['time'], 
                                 self.trajectory_params['altitude'], 
                                 self.trajectory_params['slope'], 
-                                self.trajectory_params['speed'])
+                                self.trajectory_params['speed'],
+                                self.trajectory_params.get('heading'),
+                                self.trajectory_params.get('turn_rate'))
             
             # Message de succès avec informations
             info_msg = "✅ Simulation terminée!\n\n"
             info_msg += f"📊 Distance totale: {self.trajectory_params['distance']:.2f} km\n"
             info_msg += f"⏱️  Temps de vol: {self.trajectory_params['flight_time']*60:.1f} minutes\n"
             info_msg += f"📍 Points de trajectoire: {self.trajectory_params.get('n_points', len(self.trajectory))}\n"
+            
+            # Informations sur les vitesses
+            if 'initial_speed' in self.trajectory_params:
+                info_msg += f"\n✈️  Vitesse initiale: {self.trajectory_params['initial_speed']:.1f} km/h\n"
+                if 'approach_speed' in self.trajectory_params:
+                    info_msg += f"🎯 Vitesse d'approche: {self.trajectory_params['approach_speed']:.1f} km/h\n"
+            
+            # Informations sur le virage (nouvelle trajectoire avec virages)
+            if 'turn_radius' in self.trajectory_params:
+                info_msg += f"\n🔄 Rayon de virage: {self.trajectory_params['turn_radius']:.3f} km\n"
+                info_msg += f"🎯 Angle de virage: {abs(self.trajectory_params['turn_angle']):.1f}°\n"
+                intercept = self.trajectory_params['intercept_point']
+                info_msg += f"📍 Point d'interception: ({intercept[0]:.2f}, {intercept[1]:.2f}) km\n"
             
             if 'level_flight_distance' in self.trajectory_params:
                 info_msg += f"\n🛫 Vol en palier: {self.trajectory_params['level_flight_distance']:.2f} km\n"

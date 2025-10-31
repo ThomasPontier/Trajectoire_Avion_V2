@@ -17,7 +17,8 @@ class AircraftType:
             "name": "Avion Léger",
             "max_climb_slope": 15.0,      # degrés
             "max_descent_slope": -10.0,   # degrés (négatif = descente)
-            "typical_speed": 180,          # km/h
+            "typical_speed": 180,          # km/h (vitesse de croisière)
+            "approach_speed": 120,         # km/h (vitesse d'approche finale)
             "max_bank_angle": 30.0,        # degrés d'inclinaison max
         },
         "commercial": {
@@ -25,6 +26,7 @@ class AircraftType:
             "max_climb_slope": 10.0,
             "max_descent_slope": -6.0,
             "typical_speed": 250,
+            "approach_speed": 180,
             "max_bank_angle": 25.0,
         },
         "cargo": {
@@ -32,6 +34,7 @@ class AircraftType:
             "max_climb_slope": 8.0,
             "max_descent_slope": -5.0,
             "typical_speed": 220,
+            "approach_speed": 160,
             "max_bank_angle": 20.0,
         }
     }
@@ -110,19 +113,33 @@ class Aircraft:
             'max_descent_slope': self.max_descent_slope
         }
     
-    def calculate_min_turn_radius(self):
+    def calculate_min_turn_radius(self, speed=None):
         """
         Calcule le rayon de virage minimal basé sur la vitesse
-        (Pour version 1.2)
+        
+        Args:
+            speed: Vitesse en km/h (si None, utilise la vitesse actuelle de l'avion)
         
         Returns:
             float: Rayon minimal en km
         """
-        v_ms = self.speed / 3.6  # Conversion km/h → m/s
+        if speed is None:
+            speed = self.speed
+            
+        v_ms = speed / 3.6  # Conversion km/h → m/s
         g = 9.81
         bank_angle_rad = np.radians(self.max_bank_angle)
         radius_m = (v_ms ** 2) / (g * np.tan(bank_angle_rad))
         return radius_m / 1000.0  # Retour en km
+    
+    def get_approach_speed(self):
+        """
+        Retourne la vitesse d'approche finale pour ce type d'avion
+        
+        Returns:
+            float: Vitesse d'approche en km/h
+        """
+        return self.specs.get("approach_speed", self.speed * 0.7)
     
     def __str__(self):
         """Représentation textuelle de l'avion"""

@@ -4,9 +4,27 @@
 
 Ce projet permet de calculer et visualiser la trajectoire optimale d'un avion pour atteindre le point FAF (Final Approach Fix) d'un aéroport dans un espace aérien configurable.
 
-## 🎯 Version Actuelle : 1.1+
+## 🎯 Version Actuelle : 1.3
 
-### ✨ Nouveautés Version 1.1+
+### ✨ Nouveautés Version 1.3
+- **🧭 Trajectoire basée sur le vecteur vitesse** : La trajectoire dépend du cap, de la vitesse et de la position
+- **🔄 Virage initial automatique** : Si le cap ne pointe pas vers le FAF, un virage est calculé automatiquement
+- **📐 Physique réaliste** : L'avion ne peut pas changer instantanément de direction
+- **🎯 Deux modes de calcul** :
+  - **Trajectoire directe** (virages désactivés) : Virage vers le FAF puis ligne droite
+  - **Virages réalistes** (activés) : Interception tangente de l'axe d'approche aéroport-FAF
+- **🔍 Navigation 3D améliorée** : Zoom, rotation, déplacement avec barre d'outils
+- **➡️ Visualisation du cap** : Flèche verte montrant la direction initiale de l'avion
+- **⚡ Variation de vitesse** : Décélération progressive durant l'approche finale
+
+### Nouveautés Version 1.2
+- **🔄 Virages réalistes** : Calcul de trajectoire avec rayon de courbure minimum
+- **🎯 Interception tangente** : L'avion rejoint l'axe d'approche de manière tangente
+- **📐 Respect des contraintes physiques** : Rayon de virage basé sur vitesse et angle d'inclinaison max
+- **🎨 Visualisation multi-phases** : Virage (cyan), approche (vert), descente (orange)
+- **📊 Informations détaillées** : Rayon de virage, angle, point d'interception affichés
+
+### Fonctionnalités Version 1.1+
 - **Interface à onglets** : Organisation claire avec 3 onglets (Environnement, Obstacles, Avion)
 - **Environnement personnalisable** : Dimensions configurables (X, Y, Z)
 - **Positions configurables** : Aéroport et FAF repositionnables
@@ -42,25 +60,88 @@ Ce projet permet de calculer et visualiser la trajectoire optimale d'un avion po
 
 ### ✈️ Onglet Avion
 - **Types d'avions** : 
-  - 🛩️ Léger : Pentes ±15°/±10°, vitesse 200 km/h
-  - ✈️ Commercial : Pentes ±10°/±6°, vitesse 250 km/h
-  - 🛫 Cargo : Pentes ±8°/±5°, vitesse 220 km/h
+  - 🛩️ Léger : Pentes ±15°/±10°, vitesse 180 km/h (approche: 120 km/h)
+  - ✈️ Commercial : Pentes ±10°/±6°, vitesse 250 km/h (approche: 180 km/h)
+  - 🛫 Cargo : Pentes ±8°/±5°, vitesse 220 km/h (approche: 160 km/h)
 - **Position initiale** : Configuration X, Y, Altitude
-- **Paramètres de vol** : Vitesse et cap initial
+- **Paramètres de vol** : 
+  - Vitesse de croisière (km/h)
+  - 🧭 **Cap initial** (°) : 0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest
+  - Le cap est visualisé par une flèche verte sur l'avion
+- **Options de trajectoire** :
+  - ☑️ **Virages réalistes** : Active l'interception tangente de l'axe d'approche
 - **Spécifications affichées** : Contraintes visibles en temps réel
 
 ### 📊 Visualisation
 - **Vue 3D interactive** : 
+  - 🔍 **Barre d'outils de navigation** : Zoom, rotation, déplacement
   - Espace aérien avec grille
   - Aéroport (carré rouge)
   - FAF (triangle bleu)
   - Axe d'approche (demi-droite pointillée noire)
   - Obstacles cylindriques (surfaces 3D)
-  - Trajectoire colorée par phase
+  - 🎯 **Direction de l'avion** : Flèche verte indiquant le cap initial
+  - Trajectoire colorée par phase :
+    - 🔵 Cyan : Phase de virage
+    - 🟢 Vert : Approche en palier sur l'axe
+    - 🟠 Orange : Descente finale
+  - Point d'interception (losange bleu)
 - **Graphiques temporels** :
   - Altitude au cours du temps
   - Pente au cours du temps (avec limites)
-  - Vitesse au cours du temps
+  - Vitesse au cours du temps (avec variation durant l'approche)
+
+### 🧭 Logique de Calcul des Trajectoires (V1.3)
+
+**Principe fondamental :**
+La trajectoire est calculée en fonction du **vecteur vitesse** de l'avion (position + cap + vitesse), pas seulement de sa position. L'avion ne peut pas virer instantanément.
+
+#### Mode 1: Trajectoire Directe vers FAF (☐ Virages réalistes désactivés)
+
+1. **Analyse du cap initial** : 
+   - Calculer l'angle entre le cap actuel et la direction vers le FAF
+   - Si angle > 5° : virage nécessaire
+
+2. **Virage initial** :
+   - Rayon minimum : `R_min = V² / (g × tan(φ_max))`
+   - Sens de virage : gauche ou droite selon l'angle le plus court
+   - Arc de cercle jusqu'à pointer vers le FAF
+
+3. **Ligne droite** :
+   - Après le virage, vol en ligne droite vers le FAF
+   - Gestion de l'altitude : palier puis descente respectant la pente max
+
+#### Mode 2: Interception de l'Axe d'Approche (☑️ Virages réalistes activés)
+
+1. **Axe d'approche** :
+   - Direction : Aéroport → FAF (prolongée au-delà)
+   - L'avion doit intercepter cet axe de manière tangente
+
+2. **Calcul géométrique** :
+   - Centre du cercle de virage basé sur le cap actuel
+   - Point tangent sur l'axe d'approche (équation quadratique)
+   - Arc de cercle jusqu'à l'interception tangente
+
+3. **Suivi de l'axe** :
+   - Vol aligné sur l'axe d'approche
+   - Descente progressive jusqu'au FAF
+   - Décélération durant l'approche finale
+
+**Formule du rayon de virage :**
+```
+R_min = V² / (g × tan(φ_max))
+```
+Où:
+- V = vitesse de l'avion (m/s)
+- g = 9.81 m/s² (gravité)
+- φ_max = angle d'inclinaison maximum (30° léger, 25° commercial, 20° cargo)
+6. Suivre l'axe jusqu'au FAF avec gestion de l'altitude
+
+**Avantages:**
+- ✅ Respect des contraintes physiques
+- ✅ Trajectoire réaliste et pilotable
+- ✅ Minimise l'angle de correction
+- ✅ Alignement parfait avec l'axe d'approche
 
 ### Simulation
 - Calcul de trajectoire directe vers le FAF
@@ -179,7 +260,15 @@ V2/
 
 ## Évolutions
 
-### ✅ Version 1.1+ - IMPLÉMENTÉE
+### ✅ Version 1.2 - IMPLÉMENTÉE
+- ✅ **Virages réalistes** : Rayon de courbure minimum respecté
+- ✅ **Interception tangente** : Rejoindre l'axe d'approche en tangente
+- ✅ **Calcul physique** : Rayon basé sur vitesse et inclinaison max
+- ✅ **Arc de cercle** : Trajectoire courbe jusqu'à l'axe
+- ✅ **Visualisation colorée** : Virage cyan, approche vert, descente orange
+- ✅ **Mode sélectionnable** : Checkbox pour activer/désactiver
+
+### Version 1.1+ - Fondations
 - ✅ Interface à onglets (Environnement, Obstacles, Avion)
 - ✅ Environnement personnalisable (dimensions, positions)
 - ✅ Obstacles cylindriques avec gestion complète
@@ -192,17 +281,17 @@ V2/
 - ✅ Visualisation avec phases colorées
 - ✅ Graphiques avec limites
 
-### 🔄 Version 1.2 - PROCHAINE
-- Rayon de virage minimal
+### 🔄 Version 1.3 - PROCHAINE
 - Détection de collision avec obstacles
 - Recalcul automatique pour éviter les obstacles
-- Implémentation de trajectoires courbes réalistes
+- Optimisation de la trajectoire (chemin le plus court)
+- Waypoints intermédiaires
 
 ### Version 2.0 - FUTUR
 - Optimisation multi-critères (temps, carburant, confort)
-- Algorithmes d'évitement avancés
+- Algorithmes d'évitement avancés (A*, RRT)
 - Conditions météorologiques (vent, turbulences)
-- Export des trajectoires
+- Export des trajectoires (JSON, CSV)
 
 ## Structure des Données
 
