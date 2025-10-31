@@ -2,7 +2,7 @@
     "environment": {
         "size_x": 100.0,
         "size_y": 100.0,
-        "size_z": 5.0,
+        "size_z": 10.0,
         "airport": {
             "x": 5.0,
             "y": 25.0,
@@ -16,9 +16,9 @@
     },
     "cylinders": [
         {
-            "x": 30.0,
+            "x": 55.0,
             "y": 25.0,
-            "radius": 2.0,
+            "radius": 10.0,
             "height": 3.0
         }
     ],
@@ -26,10 +26,10 @@
         "type": "light",
         "position": {
             "x": 78.0,
-            "y": 66.0,
-            "z": 3.0
+            "y": 24.0,
+            "z": 2.0
         },
         "speed": 180.0,
-        "heading": 0.0
+        "heading": 90.0
     }
 }

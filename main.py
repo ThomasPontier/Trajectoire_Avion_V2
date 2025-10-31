@@ -1170,7 +1170,7 @@ class FlightSimulatorGUI:
                     print(f"   ⚠️ Version ancienne de trajectoire détectée")
             
             # Nouvelle trajectoire avec alignement progressif sur l'axe piste
-            elif self.trajectory_params and 'runway_alignment' in self.trajectory_params:
+            if self.trajectory_params and 'runway_alignment' in self.trajectory_params:
                 print(f"   📍 Type: Trajectoire avec ALIGNEMENT PROGRESSIF sur axe piste")
                 initial_end = self.trajectory_params.get('initial_segment_end', 0)
                 turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
@@ -1427,7 +1427,7 @@ class FlightSimulatorGUI:
                                    self.trajectory[turn_end:, 1], 
                                    'g-', linewidth=2, label='Sur piste', alpha=0.9)
             
-            elif self.trajectory_params and 'turn_radius' in self.trajectory_params:
+            if self.trajectory_params and 'turn_radius' in self.trajectory_params:
                 # Vérifier s'il y a un segment initial (2 phases: vol initial → virage jusqu'au FAF)
                 if 'initial_segment_end_index' in self.trajectory_params:
                     initial_end = self.trajectory_params['initial_segment_end_index']
@@ -1650,14 +1650,22 @@ class FlightSimulatorGUI:
             # Calculer la trajectoire selon l'option choisie
             calculator = TrajectoryCalculator(self.environment)
             
+            # Vérifier s'il y a des obstacles
+            if len(self.cylinders) > 0:
+                print(f"\n🚧 Détection de {len(self.cylinders)} obstacle(s) - activation évitement")
+            
             if self.use_realistic_turns_var.get():
-                # Trajectoire avec virages réalistes
+                # Trajectoire avec virages réalistes (avec évitement d'obstacles)
                 print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
-                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(self.aircraft)
+                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(
+                    self.aircraft, self.cylinders
+                )
             else:
-                # Trajectoire directe classique
+                # Trajectoire directe avec évitement automatique d'obstacles
                 print("\n🔧 Calcul: Trajectoire DIRECTE...")
-                self.trajectory, self.trajectory_params = calculator.calculate_trajectory(self.aircraft)
+                self.trajectory, self.trajectory_params = calculator.calculate_trajectory(
+                    self.aircraft, self.cylinders
+                )
             
             print(f"\n📦 Trajectoire calculée: {len(self.trajectory)} points stockés dans self.trajectory")
             print(f"📦 Paramètres stockés: {list(self.trajectory_params.keys())}")
