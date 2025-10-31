@@ -4,6 +4,38 @@
 
 Ce projet permet de calculer et visualiser la trajectoire optimale d'un avion pour atteindre le point FAF (Final Approach Fix) d'un aéroport dans un espace aérien configurable.
 
+## 🚀 Installation et Démarrage
+
+### Prérequis
+- Python 3.8 ou supérieur
+- Git
+
+### Clonage du projet
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/ThomasPontier/Trajectoire_Avion_V2.git
+
+# Accéder au répertoire du projet
+cd Trajectoire_Avion_V2
+```
+
+### Installation des dépendances
+
+```bash
+# Installer les packages requis
+pip install -r requirements.txt
+```
+
+### Lancement du simulateur
+
+```bash
+# Lancer l'application
+python main.py
+```
+
+Ou sous Windows, double-cliquez sur `lancer_simulateur.bat`
+
 ## 🎯 Version Actuelle : 1.3
 
 ### ✨ Nouveautés Version 1.3
