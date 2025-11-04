@@ -1,346 +1,598 @@
-# Simulateur de Trajectoire d'Avion - Projet P21
+# 🛩️ Simulateur de Trajectoire d'Avion
 
-## Description
+**Projet P21 - ESTACA 4ème année**
 
-Ce projet permet de calculer et visualiser la trajectoire optimale d'un avion pour atteindre le point FAF (Final Approach Fix) d'un aéroport dans un espace aérien configurable.
+Application standalone de simulation et visualisation de trajectoires aériennes optimales pour l'approche finale d'un aéroport.
 
-## 🚀 Installation et Démarrage
+![Version](https://img.shields.io/badge/version-1.3-blue)
+![Python](https://img.shields.io/badge/python-3.8+-green)
+![License](https://img.shields.io/badge/license-Educational-orange)
 
-### Prérequis
+---
+
+## 📋 Table des Matières
+
+- [À propos](#-à-propos)
+- [Installation Rapide](#-installation-rapide)
+- [Architecture du Projet](#-architecture-du-projet)
+- [Fonctionnalités](#-fonctionnalités)
+- [Guide d'Utilisation](#-guide-dutilisation)
+- [Calcul des Trajectoires](#-calcul-des-trajectoires)
+- [Génération de l'Exécutable](#-génération-de-lexécutable)
+- [Configuration](#-configuration)
+- [Développement](#-développement)
+
+---
+
+## 🎯 À propos
+
+Ce simulateur permet de calculer et visualiser en 3D la trajectoire optimale d'un avion pour atteindre le point FAF (Final Approach Fix) d'un aéroport. Il prend en compte :
+
+- **La physique du vol** : contraintes de pente, rayon de virage, vitesse
+- **Les obstacles** : zones interdites de survol (cylindres 3D)
+- **Différents types d'avions** : léger, commercial, cargo
+- **Deux modes de trajectoire** : approche directe ou interception d'axe
+
+### 🌟 Caractéristiques Principales
+
+- ✅ **Interface graphique intuitive** avec onglets organisés
+- ✅ **Visualisation 3D interactive** avec barre d'outils de navigation
+- ✅ **Calcul physique réaliste** avec contraintes aéronautiques
+- ✅ **Sauvegarde automatique** de la configuration
+- ✅ **Application standalone** : aucune installation Python nécessaire pour l'exécutable
+
+---
+
+## 🚀 Installation Rapide
+
+### Option 1 : Utiliser l'Exécutable (Recommandé pour les Utilisateurs)
+
+1. **Téléchargez** le fichier `SimulateurTrajectoireAvion.exe`
+2. **Copiez-le** où vous voulez sur votre ordinateur
+3. **Double-cliquez** pour lancer l'application
+4. ✨ C'est tout ! Aucune installation nécessaire
+
+> 💡 **Note** : Le fichier `config.json` sera créé automatiquement au premier lancement dans le même dossier que l'exécutable.
+
+### Option 2 : Exécuter depuis le Code Source (Pour les Développeurs)
+
+#### Prérequis
 - Python 3.8 ou supérieur
-- Git
+- pip (gestionnaire de packages Python)
 
-### Clonage du projet
+#### Installation
 
-```bash
-# Cloner le dépôt
+```powershell
+# 1. Cloner le dépôt
 git clone https://github.com/ThomasPontier/Trajectoire_Avion_V2.git
-
-# Accéder au répertoire du projet
 cd Trajectoire_Avion_V2
-```
 
-### Installation des dépendances
-
-```bash
-# Installer les packages requis
+# 2. Installer les dépendances
 pip install -r requirements.txt
-```
 
-### Lancement du simulateur
-
-```bash
-# Lancer l'application
+# 3. Lancer l'application
 python main.py
 ```
 
 Ou sous Windows, double-cliquez sur `lancer_simulateur.bat`
 
-## 🎯 Version Actuelle : 1.3
+---
 
-### ✨ Nouveautés Version 1.3
-- **🧭 Trajectoire basée sur le vecteur vitesse** : La trajectoire dépend du cap, de la vitesse et de la position
-- **🔄 Virage initial automatique** : Si le cap ne pointe pas vers le FAF, un virage est calculé automatiquement
-- **📐 Physique réaliste** : L'avion ne peut pas changer instantanément de direction
-- **🎯 Deux modes de calcul** :
-  - **Trajectoire directe** (virages désactivés) : Virage vers le FAF puis ligne droite
-  - **Virages réalistes** (activés) : Interception tangente de l'axe d'approche aéroport-FAF
-- **🔍 Navigation 3D améliorée** : Zoom, rotation, déplacement avec barre d'outils
-- **➡️ Visualisation du cap** : Flèche verte montrant la direction initiale de l'avion
-- **⚡ Variation de vitesse** : Décélération progressive durant l'approche finale
+## 📁 Architecture du Projet
 
-### Nouveautés Version 1.2
-- **🔄 Virages réalistes** : Calcul de trajectoire avec rayon de courbure minimum
-- **🎯 Interception tangente** : L'avion rejoint l'axe d'approche de manière tangente
-- **📐 Respect des contraintes physiques** : Rayon de virage basé sur vitesse et angle d'inclinaison max
-- **🎨 Visualisation multi-phases** : Virage (cyan), approche (vert), descente (orange)
-- **📊 Informations détaillées** : Rayon de virage, angle, point d'interception affichés
+### Structure des Fichiers
 
-### Fonctionnalités Version 1.1+
-- **Interface à onglets** : Organisation claire avec 3 onglets (Environnement, Obstacles, Avion)
-- **Environnement personnalisable** : Dimensions configurables (X, Y, Z)
-- **Positions configurables** : Aéroport et FAF repositionnables
-- **Obstacles cylindriques** : Ajout de zones interdites de vol
-- **Axe d'approche** : Visualisation de la trajectoire d'approche finale (demi-droite pointillée)
-- **Sauvegarde persistante** : Configuration automatiquement sauvegardée et restaurée
-- **Types d'avions** : Léger, Commercial, Cargo avec spécifications différentes
-- **Contrainte de pente maximale** : Respect de la pente max selon le type d'avion
-- **Vol en palier optimisé** : L'avion vole en palier et descend au plus tard
-- **Visualisation améliorée** : Phases colorées (palier vert, descente orange)
-- **Graphiques détaillés** : Affichage des limites de pente
+```
+Trajectoire_Avion_V2/
+│
+├── 📄 main.py                          # Interface graphique principale (1748 lignes)
+├── 📄 aircraft.py                      # Gestion des avions et spécifications (149 lignes)
+├── 📄 environment.py                   # Environnement aérien et points de navigation (88 lignes)
+├── 📄 trajectory_calculator.py         # Calcul des trajectoires optimales (2001 lignes)
+│
+├── 🔧 config.json                      # Configuration sauvegardée (auto-généré)
+├── 🖼️ logo.png                         # Logo de l'application
+│
+├── 🔨 build_exe.py                     # Script de génération de l'exécutable
+├── 🔨 SimulateurTrajectoireAvion.spec  # Configuration PyInstaller
+├── 🔨 lancer_simulateur.bat            # Lanceur Windows rapide
+│
+├── 📦 requirements.txt                 # Dépendances Python
+└── 📖 README.md                        # Cette documentation
+```
 
-[📖 Documentation complète V1.1](VERSION_1_1.md)
+### Modules Principaux
 
-## Fonctionnalités Principales
+#### 1. **main.py** - Interface Graphique
+- Classe `FlightSimulatorGUI` : interface Tkinter avec 4 onglets
+- Gestion des événements utilisateur
+- Visualisation 3D et 2D avec Matplotlib
+- Sauvegarde/chargement de la configuration
 
-### 🌍 Onglet Environnement
-- **Dimensions personnalisables** : Taille de l'espace aérien (X, Y, Z)
-- **Position de l'aéroport** : Coordonnées configurables (X, Y, Z)
-- **Position du FAF** : Point d'approche finale configurable (X, Y, Z)
-- **Axe d'approche** : Demi-droite pointillée partant de la piste et passant par le FAF
-- **Validation instantanée** : Application immédiate de la configuration
+#### 2. **aircraft.py** - Modèle d'Avion
+- Classe `AircraftType` : spécifications des types d'avions
+- Classe `Aircraft` : représentation d'un avion avec :
+  - Position, vitesse, cap
+  - Contraintes de pente (montée/descente)
+  - Calcul du rayon de virage minimal
 
-### 🚧 Onglet Obstacles
-- **Cylindres 3D** : Obstacles représentant des zones interdites
-- **Interface scrollable** : Gestion d'un nombre illimité d'obstacles
-- **Édition complète** :
-  - Ajout avec position (X, Y), rayon et hauteur
-  - Édition par sélection (double-clic)
-  - Suppression individuelle ou globale
-- **Sauvegarde automatique** : Persistance après chaque modification
-- **Liste détaillée** : Visualisation de tous les cylindres actifs
+**Types d'avions disponibles :**
 
-### ✈️ Onglet Avion
-- **Types d'avions** : 
-  - 🛩️ Léger : Pentes ±15°/±10°, vitesse 180 km/h (approche: 120 km/h)
-  - ✈️ Commercial : Pentes ±10°/±6°, vitesse 250 km/h (approche: 180 km/h)
-  - 🛫 Cargo : Pentes ±8°/±5°, vitesse 220 km/h (approche: 160 km/h)
-- **Position initiale** : Configuration X, Y, Altitude
-- **Paramètres de vol** : 
-  - Vitesse de croisière (km/h)
-  - 🧭 **Cap initial** (°) : 0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest
-  - Le cap est visualisé par une flèche verte sur l'avion
-- **Options de trajectoire** :
-  - ☑️ **Virages réalistes** : Active l'interception tangente de l'axe d'approche
-- **Spécifications affichées** : Contraintes visibles en temps réel
+| Type | Pente Max Montée | Pente Max Descente | Vitesse Croisière | Vitesse Approche | Inclinaison Max |
+|------|------------------|-------------------|-------------------|------------------|-----------------|
+| 🛩️ Léger | +15° | -10° | 180 km/h | 120 km/h | 30° |
+| ✈️ Commercial | +10° | -6° | 250 km/h | 180 km/h | 25° |
+| 🛫 Cargo | +8° | -5° | 220 km/h | 160 km/h | 20° |
 
-### 📊 Visualisation
-- **Vue 3D interactive** : 
-  - 🔍 **Barre d'outils de navigation** : Zoom, rotation, déplacement
-  - Espace aérien avec grille
-  - Aéroport (carré rouge)
-  - FAF (triangle bleu)
-  - Axe d'approche (demi-droite pointillée noire)
-  - Obstacles cylindriques (surfaces 3D)
-  - 🎯 **Direction de l'avion** : Flèche verte indiquant le cap initial
-  - Trajectoire colorée par phase :
-    - 🔵 Cyan : Phase de virage
-    - 🟢 Vert : Approche en palier sur l'axe
-    - 🟠 Orange : Descente finale
-  - Point d'interception (losange bleu)
-- **Graphiques temporels** :
-  - Altitude au cours du temps
-  - Pente au cours du temps (avec limites)
-  - Vitesse au cours du temps (avec variation durant l'approche)
+#### 3. **environment.py** - Environnement Aérien
+- Classe `Environment` : espace aérien 3D
+- Positions de l'aéroport et du FAF
+- Validation des positions
+- Calcul de l'axe d'approche
 
-### 🧭 Logique de Calcul des Trajectoires (V1.3)
+#### 4. **trajectory_calculator.py** - Calcul de Trajectoire
+- Classe `TrajectoryCalculator` : algorithmes de calcul
+- Deux modes de calcul :
+  - **Mode simplifié** : virage direct vers FAF
+  - **Mode réaliste** : interception tangente de l'axe d'approche
+- Gestion des contraintes physiques
+- Évitement d'obstacles
 
-**Principe fondamental :**
-La trajectoire est calculée en fonction du **vecteur vitesse** de l'avion (position + cap + vitesse), pas seulement de sa position. L'avion ne peut pas virer instantanément.
+---
 
-#### Mode 1: Trajectoire Directe vers FAF (☐ Virages réalistes désactivés)
+## ✨ Fonctionnalités
 
-1. **Analyse du cap initial** : 
-   - Calculer l'angle entre le cap actuel et la direction vers le FAF
-   - Si angle > 5° : virage nécessaire
+### 🌍 Onglet 1 : Configuration
 
-2. **Virage initial** :
-   - Rayon minimum : `R_min = V² / (g × tan(φ_max))`
-   - Sens de virage : gauche ou droite selon l'angle le plus court
-   - Arc de cercle jusqu'à pointer vers le FAF
+#### **Environnement**
+- Dimensions personnalisables de l'espace aérien (X, Y, Z)
+- Position de l'aéroport (X, Y, Z)
+- Position du point FAF (X, Y, Z)
+- Validation instantanée avec prévisualisation 3D
 
-3. **Ligne droite** :
-   - Après le virage, vol en ligne droite vers le FAF
-   - Gestion de l'altitude : palier puis descente respectant la pente max
+#### **Obstacles**
+- Ajout de cylindres 3D (zones interdites)
+- Paramètres : position (X, Y), rayon, hauteur
+- Édition par double-clic
+- Suppression individuelle ou globale
+- Liste scrollable pour nombre illimité d'obstacles
 
-#### Mode 2: Interception de l'Axe d'Approche (☑️ Virages réalistes activés)
+#### **Avion**
+- Sélection du type (Léger / Commercial / Cargo)
+- Position initiale (X, Y, Altitude)
+- Vitesse de croisière (km/h)
+- **Cap initial** (0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)
+- Option **"Virages réalistes"** pour mode interception d'axe
 
-1. **Axe d'approche** :
+### 📦 Onglet 2 : Vue 3D
+
+Visualisation 3D interactive avec :
+- **Barre d'outils de navigation** : zoom, rotation, déplacement
+- Espace aérien avec grille
+- 🟥 Aéroport (carré rouge)
+- 🔷 FAF (triangle bleu)
+- ➡️ **Flèche verte** : direction initiale de l'avion
+- Obstacles cylindriques semi-transparents
+- Axe d'approche (ligne pointillée)
+- **Trajectoire colorée** :
+  - 🔵 **Cyan** : phase de virage
+  - 🟢 **Vert** : approche en palier
+  - 🟠 **Orange** : descente finale
+- ⬥ Point d'interception (losange bleu)
+
+### 📐 Onglet 3 : Vues 2D
+
+Trois projections orthogonales :
+- **Vue de dessus (XY)** : plan horizontal
+- **Vue de face (XZ)** : profil longitudinal
+- **Vue de côté (YZ)** : profil latéral
+
+### 📊 Onglet 4 : Paramètres
+
+Graphiques temporels :
+- **Altitude** vs distance/temps
+- **Pente** vs temps (avec limites min/max)
+- **Vitesse** vs temps (décélération en approche)
+
+### 💾 Sauvegarde Automatique
+
+Toute la configuration est sauvegardée dans `config.json` :
+- Dimensions de l'environnement
+- Positions aéroport et FAF
+- Liste des obstacles
+- Paramètres de l'avion
+- ✅ Restauration automatique au redémarrage
+
+---
+
+## 🎮 Guide d'Utilisation
+
+### Démarrage Rapide
+
+1. **Lancez l'application** (double-clic sur `.exe` ou `python main.py`)
+2. **Configurez l'environnement** (onglet Configuration → Environnement)
+3. **Ajoutez des obstacles** (optionnel, onglet Configuration → Obstacles)
+4. **Configurez l'avion** (onglet Configuration → Avion)
+5. **Cliquez sur "Calculer la Trajectoire"**
+6. **Visualisez** les résultats dans les onglets Vue 3D, Vues 2D et Paramètres
+
+### Configuration Exemple
+
+#### Scénario 1 : Approche Simple
+
+```
+Environnement:
+├─ Taille: 100 × 100 × 10 km
+├─ Aéroport: (5, 25, 0)
+└─ FAF: (20, 25, 1)
+
+Avion (Léger):
+├─ Position: (70, 70, 3)
+├─ Cap: 180° (Sud)
+├─ Vitesse: 180 km/h
+└─ ☐ Virages réalistes: DÉSACTIVÉ
+
+Résultat:
+🔵 Virage de ~45° vers l'ouest
+🟢 Vol en palier vers le FAF
+🟠 Descente de 3→1 km
+```
+
+#### Scénario 2 : Interception d'Axe avec Obstacles
+
+```
+Environnement:
+├─ Taille: 100 × 100 × 10 km
+├─ Aéroport: (5, 25, 0)
+├─ FAF: (20, 25, 1)
+└─ Obstacles:
+    ├─ Cylindre 1: (55, 25, R=10, H=3)
+    └─ Cylindre 2: (60, 80, R=12, H=3)
+
+Avion (Commercial):
+├─ Position: (70, 93, 2)
+├─ Cap: 90° (Est)
+├─ Vitesse: 250 km/h
+└─ ☑️ Virages réalistes: ACTIVÉ
+
+Résultat:
+🔵 Virage tangent pour intercepter l'axe aéroport-FAF
+🟢 Suivi de l'axe d'approche
+🟠 Descente alignée jusqu'au FAF
+```
+
+### Navigation 3D
+
+- 🖱️ **Clic gauche + glisser** : rotation
+- 🖱️ **Clic droit + glisser** : déplacement (pan)
+- 🖱️ **Molette** : zoom
+- 🔧 **Barre d'outils** :
+  - 🏠 Réinitialiser la vue
+  - ↔️ Déplacer
+  - 🔍 Zoom sur zone
+  - 💾 Sauvegarder l'image
+
+---
+
+## 🧮 Calcul des Trajectoires
+
+### Principe Fondamental
+
+La trajectoire est calculée en fonction du **vecteur vitesse** de l'avion (position + cap + vitesse). L'avion ne peut pas changer instantanément de direction.
+
+### Mode 1 : Trajectoire Directe (☐ Virages désactivés)
+
+**Algorithme :**
+
+1. **Analyse du cap initial**
+   - Calculer l'angle θ entre le cap actuel et la direction vers le FAF
+   - Si θ > 5° → virage nécessaire
+
+2. **Virage initial**
+   - Calcul du rayon minimal : `R_min = V² / (g × tan(φ_max))`
+   - Détermination du sens (gauche/droite) pour angle le plus court
+   - Tracé d'un arc de cercle jusqu'à pointer vers le FAF
+
+3. **Ligne droite**
+   - Vol en ligne droite vers le FAF
+   - Altitude : palier puis descente (respectant pente max)
+
+**Formule du rayon de virage :**
+
+```
+R_min = V² / (g × tan(φ_max))
+```
+
+Où :
+- `V` = vitesse (m/s)
+- `g` = 9.81 m/s² (gravité)
+- `φ_max` = angle d'inclinaison maximum (30° léger, 25° commercial, 20° cargo)
+
+**Exemple** (avion léger, 180 km/h, φ=30°) :
+```
+V = 50 m/s
+R = (50)² / (9.81 × tan(30°))
+R = 2500 / 5.66
+R ≈ 441 mètres = 0.44 km
+```
+
+### Mode 2 : Interception d'Axe (☑️ Virages réalistes)
+
+**Algorithme :**
+
+1. **Définir l'axe d'approche**
    - Direction : Aéroport → FAF (prolongée au-delà)
-   - L'avion doit intercepter cet axe de manière tangente
+   - Ligne droite théorique d'atterrissage
 
-2. **Calcul géométrique** :
+2. **Calcul géométrique**
    - Centre du cercle de virage basé sur le cap actuel
-   - Point tangent sur l'axe d'approche (équation quadratique)
+   - Résolution d'équation quadratique pour point tangent
    - Arc de cercle jusqu'à l'interception tangente
 
-3. **Suivi de l'axe** :
+3. **Suivi de l'axe**
    - Vol aligné sur l'axe d'approche
    - Descente progressive jusqu'au FAF
    - Décélération durant l'approche finale
 
-**Formule du rayon de virage :**
-```
-R_min = V² / (g × tan(φ_max))
-```
-Où:
-- V = vitesse de l'avion (m/s)
-- g = 9.81 m/s² (gravité)
-- φ_max = angle d'inclinaison maximum (30° léger, 25° commercial, 20° cargo)
-6. Suivre l'axe jusqu'au FAF avec gestion de l'altitude
-
-**Avantages:**
+**Avantages :**
 - ✅ Respect des contraintes physiques
-- ✅ Trajectoire réaliste et pilotable
+- ✅ Trajectoire réaliste (procédure IFR standard)
+- ✅ Alignement parfait avec l'axe de la piste
 - ✅ Minimise l'angle de correction
-- ✅ Alignement parfait avec l'axe d'approche
 
-### Simulation
-- Calcul de trajectoire directe vers le FAF
-- Affichage en temps réel de la trajectoire
+**Cas d'échec :**
+Si la géométrie rend l'interception impossible (avion trop près, angle impossible), le système bascule automatiquement en Mode 1.
 
-## 💾 Sauvegarde Automatique
+### Gestion de l'Altitude
 
-La configuration est automatiquement sauvegardée dans `config.json` :
-- **Environnement** : Dimensions, positions de l'aéroport et du FAF
-- **Obstacles** : Tous les cylindres avec leurs caractéristiques
-- **Avion** : Type, position, vitesse et cap
+**Stratégie :**
+1. Vol en palier le plus longtemps possible
+2. Descente au plus tard pour respecter la pente maximale
+3. Décélération progressive en approche finale
 
-Au redémarrage de l'application, toute la configuration est restaurée automatiquement.
+**Calcul de la distance de descente :**
 
-## Installation
+```
+d_descente = Δh / tan(pente_max)
+```
+
+**Exemple** (descente de 2 km, pente -10°) :
+```
+d = 2000 m / tan(10°)
+d ≈ 11 340 m = 11.3 km
+```
+
+### Évitement d'Obstacles
+
+- Détection automatique des collisions avec les cylindres
+- Algorithme d'évitement latéral si nécessaire
+- Préservation de l'altitude pour éviter les obstacles
+
+---
+
+## 🔨 Génération de l'Exécutable
 
 ### Prérequis
-- Python 3.8 ou supérieur
-- pip
+- Python 3.8+
+- PyInstaller (installé automatiquement si absent)
+- Pillow (pour conversion du logo en icône)
 
-### Installation des dépendances
-
-```powershell
-pip install -r requirements.txt
-```
-
-## Utilisation
-
-### Lancer le simulateur
+### Commande Unique
 
 ```powershell
-python main.py
+python build_exe.py
 ```
 
-### Étapes d'utilisation
+### Processus Automatique
 
-1. **🌍 Configurer l'environnement** (Onglet Environnement) :
-   - Définir les dimensions de l'espace aérien (X, Y, Z)
-   - Placer l'aéroport (X, Y, Z = 0 pour le sol)
-   - Placer le FAF (généralement quelques km avant l'aéroport)
-   - Cliquer sur "Appliquer Configuration"
-   - L'axe d'approche (pointillés noirs) apparaît automatiquement
+Le script `build_exe.py` effectue automatiquement :
 
-2. **🚧 Ajouter des obstacles** (Onglet Obstacles) :
-   - Saisir position X, Y (km)
-   - Définir rayon et hauteur du cylindre
-   - Cliquer sur "Ajouter ce Cylindre"
-   - Gérer via la liste : éditer (double-clic) ou supprimer
-   - Configuration sauvegardée automatiquement
+1. ✅ Vérification/installation de PyInstaller
+2. 🧹 Nettoyage des builds précédents
+3. 🖼️ Conversion du logo PNG en icône ICO
+4. 📦 Création du fichier .spec avec configuration optimale
+5. 🚀 Build de l'exécutable standalone
+6. ✅ Validation et affichage de la taille
 
-3. **✈️ Configurer l'avion** (Onglet Avion) :
-   - Choisir le type : Léger, Commercial ou Cargo
-   - Observer les spécifications (pentes max, vitesse typique)
-   - Entrer la position X et Y (km)
-   - Définir l'altitude (km)
-   - Régler la vitesse (km/h)
-   - Définir le cap initial (degrés, 0° = Nord, 90° = Est)
-
-4. **✅ Valider et simuler** :
-   - Cliquer sur "Valider Position"
-   - L'avion apparaît dans la vue 3D
-   - Cliquer sur "Lancer Simulation"
-   - La trajectoire s'affiche avec phases colorées :
-     - 🟢 Vert : Vol en palier
-     - 🟡 Doré : Transition progressive
-     - 🟠 Orange-Rouge : Descente
-   - Les graphiques montrent l'évolution avec limites de pente
-
-5. **📊 Analyser les résultats** :
-   - Vue 3D avec trajectoire, obstacles et axe d'approche
-   - Distance de vol en palier et de descente
-   - Pente utilisée (respect des contraintes)
-   - Évolution temporelle : altitude, pente, vitesse
-
-6. **🔄 Réinitialiser** :
-   - Cliquer sur "Réinitialiser" pour recommencer
-   - La configuration reste sauvegardée
-
-## Architecture du Projet
+### Résultat
 
 ```
-V2/
-├── main.py                      # Interface graphique avec onglets
-├── environment.py               # Gestion de l'environnement aérien
-├── aircraft.py                  # Types d'avions et spécifications
-├── trajectory_calculator.py     # Calcul de trajectoires optimales
-├── config.json                  # Sauvegarde persistante (généré automatiquement)
-├── requirements.txt             # Dépendances Python
-├── README.md                    # Documentation (ce fichier)
-├── VERSION_1_1.md              # Documentation détaillée V1.1
-└── ROADMAP.md                   # Feuille de route du projet
+📦 Exécutable créé : dist\SimulateurTrajectoireAvion.exe
+📁 Taille : ~150 MB
 ```
 
-### Fichiers Principaux
+### Configuration Incluse
 
-- **main.py** (1100+ lignes) : Interface graphique tkinter avec 3 onglets
-  - Onglet Environnement : Configuration de l'espace aérien
-  - Onglet Obstacles : Gestion des cylindres
-  - Onglet Avion : Configuration du vol
-  - Visualisation 3D et graphiques matplotlib
+L'exécutable contient :
+- ✅ Python et toutes les bibliothèques
+- ✅ Matplotlib, NumPy, Tkinter
+- ✅ Fichier config.json par défaut
+- ✅ Icône de l'application
+- ❌ **Aucune installation externe requise**
 
-- **trajectory_calculator.py** : Algorithmes de calcul
-  - Vol en palier jusqu'au point optimal
-  - Transition progressive (fonction cosinus)
-  - Descente linéaire jusqu'au FAF
-  - Respect des contraintes de pente
+### Distribution
 
-- **aircraft.py** : Modèle d'avion avec 3 types
-  - Spécifications par type (pentes, vitesse)
-  - Validation des paramètres
+Pour distribuer l'application :
+1. Copiez uniquement `SimulateurTrajectoireAvion.exe`
+2. L'utilisateur double-clique pour lancer
+3. Le fichier `config.json` sera créé automatiquement dans le même dossier
 
-- **environment.py** : Modèle de l'espace aérien
-  - Dimensions configurables
-  - Positions de l'aéroport et du FAF
-  - Validation des coordonnées
+---
 
-## Évolutions
+## ⚙️ Configuration
 
-### ✅ Version 1.2 - IMPLÉMENTÉE
-- ✅ **Virages réalistes** : Rayon de courbure minimum respecté
-- ✅ **Interception tangente** : Rejoindre l'axe d'approche en tangente
-- ✅ **Calcul physique** : Rayon basé sur vitesse et inclinaison max
-- ✅ **Arc de cercle** : Trajectoire courbe jusqu'à l'axe
-- ✅ **Visualisation colorée** : Virage cyan, approche vert, descente orange
-- ✅ **Mode sélectionnable** : Checkbox pour activer/désactiver
+### Structure de config.json
 
-### Version 1.1+ - Fondations
-- ✅ Interface à onglets (Environnement, Obstacles, Avion)
-- ✅ Environnement personnalisable (dimensions, positions)
-- ✅ Obstacles cylindriques avec gestion complète
-- ✅ Axe d'approche visualisé (demi-droite pointillée)
-- ✅ Sauvegarde persistante (config.json)
-- ✅ Types d'avions (Léger, Commercial, Cargo)
-- ✅ Contrainte de pente maximale respectée
-- ✅ Vol en palier puis descente optimale
-- ✅ Transitions progressives lisses (cosinus)
-- ✅ Visualisation avec phases colorées
-- ✅ Graphiques avec limites
+```json
+{
+    "environment": {
+        "size_x": 100.0,
+        "size_y": 100.0,
+        "size_z": 10.0,
+        "airport": {
+            "x": 5.0,
+            "y": 25.0,
+            "z": 0.0
+        },
+        "faf": {
+            "x": 20.0,
+            "y": 25.0,
+            "z": 1.0
+        }
+    },
+    "cylinders": [
+        {
+            "x": 55.0,
+            "y": 25.0,
+            "radius": 10.0,
+            "height": 3.0
+        }
+    ],
+    "aircraft": {
+        "type": "commercial",
+        "position": {
+            "x": 70.0,
+            "y": 70.0,
+            "z": 3.0
+        },
+        "speed": 250.0,
+        "heading": 180.0
+    }
+}
+```
 
-### 🔄 Version 1.3 - PROCHAINE
-- Détection de collision avec obstacles
-- Recalcul automatique pour éviter les obstacles
-- Optimisation de la trajectoire (chemin le plus court)
-- Waypoints intermédiaires
+### Paramètres Personnalisables
 
-### Version 2.0 - FUTUR
-- Optimisation multi-critères (temps, carburant, confort)
-- Algorithmes d'évitement avancés (A*, RRT)
-- Conditions météorologiques (vent, turbulences)
-- Export des trajectoires (JSON, CSV)
+#### Environnement
+- `size_x`, `size_y`, `size_z` : dimensions de l'espace (km)
+- `airport.x`, `airport.y`, `airport.z` : position aéroport
+- `faf.x`, `faf.y`, `faf.z` : position FAF
 
-## Structure des Données
+#### Obstacles
+- `x`, `y` : centre du cylindre (km)
+- `radius` : rayon (km)
+- `height` : hauteur (km)
 
-### Système de Coordonnées
-- X : Axe Est-Ouest (0 à 50 km)
-- Y : Axe Nord-Sud (0 à 50 km)
-- Z : Altitude (0 à 5 km)
+#### Avion
+- `type` : `"light"`, `"commercial"`, ou `"cargo"`
+- `position.x`, `position.y`, `position.z` : position initiale
+- `speed` : vitesse de croisière (km/h)
+- `heading` : cap initial (0-360°, 0=Nord)
 
-### Paramètres de l'Avion
-- Position : [x, y, z] en km
-- Vitesse : en km/h
-- Cap : en degrés (0° = Nord)
+---
 
-## Auteur
+## 👨‍💻 Développement
 
-Projet P21 - ESTACA 4ème année
+### Dépendances
 
-## Date
+```txt
+numpy>=1.21.0
+matplotlib>=3.4.0
+```
 
-Octobre 2025
+Pour le build :
+```txt
+pyinstaller>=5.0
+Pillow>=9.0
+```
+
+### Structure de Classe
+
+```
+FlightSimulatorGUI
+├── Environment
+├── Aircraft
+│   └── AircraftType
+└── TrajectoryCalculator
+```
+
+### Ajout d'un Nouveau Type d'Avion
+
+Dans `aircraft.py`, ajouter dans `AircraftType.SPECIFICATIONS` :
+
+```python
+"nouveau_type": {
+    "name": "Nom Affiché",
+    "max_climb_slope": 12.0,
+    "max_descent_slope": -7.0,
+    "typical_speed": 200,
+    "approach_speed": 150,
+    "max_bank_angle": 28.0,
+}
+```
+
+### Tests
+
+Configurations de test incluses dans l'interface :
+- Approche directe simple
+- Interception d'axe
+- Évitement d'obstacles multiples
+- Différents caps initiaux
+
+---
+
+## 📊 Informations Techniques
+
+### Performances
+
+- **Temps de calcul** : < 1 seconde pour trajectoire standard
+- **Points de trajectoire** : 1000-3000 selon distance
+- **Fréquence d'échantillonnage** : 0.01 km (10 mètres)
+
+### Contraintes Respectées
+
+✅ Pente maximale de montée/descente par type d'avion  
+✅ Rayon de virage minimal basé sur la physique  
+✅ Vitesse variable (décélération en approche)  
+✅ Altitude minimale (pas de vol souterrain)  
+✅ Évitement d'obstacles cylindriques  
+
+### Limitations Connues
+
+⚠️ Pas de gestion du vent  
+⚠️ Pas de consommation de carburant  
+⚠️ Obstacles uniquement cylindriques  
+⚠️ Pas de contraintes de trafic aérien  
+
+---
+
+## 📝 Historique des Versions
+
+### Version 1.3 (2025-10-30)
+- 🧭 Trajectoire basée sur le vecteur vitesse (cap + vitesse)
+- 🔄 Virage initial automatique
+- 📐 Physique du vol améliorée
+- ➡️ Visualisation du cap avec flèche verte
+- ⚡ Variation de vitesse en approche
+
+### Version 1.2 (2025-10-28)
+- 🔄 Virages réalistes avec rayon de courbure
+- 🎯 Interception tangente de l'axe d'approche
+- 🔍 Barre d'outils de navigation 3D
+- 📊 Visualisation multi-phases colorée
+
+### Version 1.1 (2025-10-25)
+- 🌍 Interface à onglets
+- 🚧 Gestion d'obstacles cylindriques
+- ✈️ Types d'avions multiples
+- 💾 Sauvegarde automatique
+
+---
+
+## 📧 Contact et Support
+
+**Projet** : P21 - ESTACA 4ème année  
+**Auteur** : Thomas Pontier  
+**Repository** : [GitHub - Trajectoire_Avion_V2](https://github.com/ThomasPontier/Trajectoire_Avion_V2)
+
+---
+
+## 📜 License
+
+Ce projet est à usage éducatif dans le cadre du projet P21 à l'ESTACA.
+
+---
+
+**🎓 Développé avec passion par les étudiants de l'ESTACA**
+
+*Simulateur de Trajectoire d'Avion - Version 1.3*

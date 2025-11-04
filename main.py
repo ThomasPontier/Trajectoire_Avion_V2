@@ -21,6 +21,27 @@ from aircraft import Aircraft, AircraftType
 from trajectory_calculator import TrajectoryCalculator
 
 
+# Configuration par défaut (utilisée si aucun fichier config n'est trouvé)
+DEFAULT_CONFIG = {
+    "environment": {
+        "size_x": 100.0,
+        "size_y": 100.0,
+        "size_z": 10.0,
+        "airport": {"x": 5.0, "y": 25.0, "z": 0.0},
+        "faf": {"x": 20.0, "y": 25.0, "z": 1.0},
+    },
+    "cylinders": [
+        {"x": 50.0, "y": 50.0, "radius": 2.0, "height": 3.0}
+    ],
+    "aircraft": {
+        "type": "commercial",
+        "position": {"x": 70.0, "y": 70.0, "z": 3.0},
+        "speed": 250.0,
+        "heading": 180.0,
+    },
+}
+
+
 class FlightSimulatorGUI:
     """Interface graphique principale du simulateur"""
     
@@ -29,12 +50,18 @@ class FlightSimulatorGUI:
         self.root.title("Simulateur de Trajectoire d'Avion - P21")
         self.root.geometry("1600x900")
         
+        # Charger et définir l'icône de l'application
+        self._set_window_icon()
+        
         # Initialisation de l'environnement avec valeurs par défaut
         self.environment = None
         self.aircraft = None
         self.trajectory = None
         self.trajectory_params = None  # Stocker les paramètres de la trajectoire
         self.cylinders = []  # Liste des cylindres (obstacles)
+        
+        # Gérer la fermeture de la fenêtre pour sauvegarder la configuration
+        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
         
         self._create_ui()
         
@@ -49,6 +76,96 @@ class FlightSimulatorGUI:
         
         # Dessiner l'environnement avec les cylindres chargés
         self._draw_environment()
+    
+    def _set_window_icon(self):
+        """Définit l'icône de la fenêtre et de la barre des tâches"""
+        import os
+        import sys
+        try:
+            # Déterminer le répertoire de l'application
+            if getattr(sys, 'frozen', False):
+                # Application empaquetée avec PyInstaller (onefile extrait dans _MEIPASS)
+                app_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+            else:
+                # Script Python normal
+                app_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Chercher d'abord un fichier .ico (meilleur pour Windows)
+            ico_path = os.path.join(app_dir, 'logo.ico')
+            png_path = os.path.join(app_dir, 'logo.png')
+            
+            icon_loaded = False
+            
+            # MÉTHODE SPÉCIALE POUR WINDOWS 10 : Utiliser ctypes pour définir l'AppUserModelID
+            # Cela force Windows à utiliser l'icône de l'exécutable dans la barre des tâches
+            if sys.platform == 'win32':
+                try:
+                    import ctypes
+                    # Définir un AppUserModelID unique pour cette application
+                    # Cela aide Windows 10/11 à identifier correctement l'application
+                    myappid = 'estaca.trajectoireavion.simulateur.v1'
+                    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+                    print(f"✅ AppUserModelID défini pour Windows")
+                except Exception as e:
+                    print(f"⚠️  Impossible de définir AppUserModelID: {e}")
+            
+            # Méthode 1: Utiliser .ico avec iconbitmap (Windows)
+            if sys.platform == 'win32' and os.path.exists(ico_path):
+                try:
+                    # Utiliser le chemin absolu
+                    abs_ico_path = os.path.abspath(ico_path)
+                    self.root.iconbitmap(default=abs_ico_path)
+                    print(f"✅ Icône .ico chargée depuis: {abs_ico_path}")
+                    icon_loaded = True
+                except Exception as e:
+                    print(f"⚠️  Erreur avec iconbitmap .ico: {e}")
+            
+            # Méthode 2: Utiliser PNG avec iconphoto (multiplateforme)
+            if os.path.exists(png_path):
+                try:
+                    from PIL import Image, ImageTk
+                    logo_image = Image.open(png_path)
+                    # Créer plusieurs tailles pour meilleure qualité
+                    sizes = [(16, 16), (32, 32), (48, 48), (64, 64)]
+                    photos = []
+                    for size in sizes:
+                        img_resized = logo_image.resize(size, Image.Resampling.LANCZOS)
+                        photo = ImageTk.PhotoImage(img_resized)
+                        photos.append(photo)
+                    
+                    # Définir l'icône pour la fenêtre (utiliser la plus grande)
+                    self.root.iconphoto(True, *photos)
+                    
+                    # Garder les références pour éviter le garbage collection
+                    self.root._icon_photos = photos
+                    
+                    if not icon_loaded:
+                        print(f"✅ Logo PNG chargé depuis: {png_path}")
+                    else:
+                        print(f"✅ Logo PNG également défini pour compatibilité")
+                    icon_loaded = True
+                except Exception as e:
+                    print(f"⚠️  Erreur avec iconphoto PNG: {e}")
+            
+            if not icon_loaded:
+                print("⚠️  Aucun logo trouvé ou chargé (.ico ou .png)")
+                
+        except Exception as e:
+            print(f"⚠️  Impossible de charger le logo: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _on_closing(self):
+        """Gestionnaire de fermeture de la fenêtre - sauvegarde la configuration"""
+        try:
+            # Sauvegarder la configuration avant de fermer
+            self._save_config()
+            print("💾 Configuration sauvegardée avant fermeture")
+        except Exception as e:
+            print(f"⚠️  Erreur lors de la sauvegarde: {e}")
+        finally:
+            # Fermer l'application
+            self.root.destroy()
         
     def _create_ui(self):
         """Crée l'interface utilisateur"""
@@ -225,19 +342,19 @@ class FlightSimulatorGUI:
         
         # Taille X
         ttk.Label(parent, text="Largeur X (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.env_size_x_var = tk.DoubleVar(value=50.0)
+        self.env_size_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["size_x"]) 
         ttk.Entry(parent, textvariable=self.env_size_x_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Taille Y
         ttk.Label(parent, text="Longueur Y (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.env_size_y_var = tk.DoubleVar(value=50.0)
+        self.env_size_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["size_y"]) 
         ttk.Entry(parent, textvariable=self.env_size_y_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Taille Z
         ttk.Label(parent, text="Hauteur Z (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.env_size_z_var = tk.DoubleVar(value=5.0)
+        self.env_size_z_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["size_z"]) 
         ttk.Entry(parent, textvariable=self.env_size_z_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
@@ -251,19 +368,19 @@ class FlightSimulatorGUI:
         
         # Aéroport X
         ttk.Label(parent, text="Aéroport X (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.airport_x_var = tk.DoubleVar(value=45.0)
+        self.airport_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["airport"]["x"]) 
         ttk.Entry(parent, textvariable=self.airport_x_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Aéroport Y
         ttk.Label(parent, text="Aéroport Y (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.airport_y_var = tk.DoubleVar(value=45.0)
+        self.airport_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["airport"]["y"]) 
         ttk.Entry(parent, textvariable=self.airport_y_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Aéroport Z (généralement 0)
         ttk.Label(parent, text="Aéroport Z (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.airport_z_var = tk.DoubleVar(value=0.0)
+        self.airport_z_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["airport"]["z"]) 
         ttk.Entry(parent, textvariable=self.airport_z_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
@@ -277,19 +394,19 @@ class FlightSimulatorGUI:
         
         # FAF X
         ttk.Label(parent, text="FAF X (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.faf_x_var = tk.DoubleVar(value=41.5)
+        self.faf_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["faf"]["x"]) 
         ttk.Entry(parent, textvariable=self.faf_x_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # FAF Y
         ttk.Label(parent, text="FAF Y (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.faf_y_var = tk.DoubleVar(value=41.5)
+        self.faf_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["faf"]["y"]) 
         ttk.Entry(parent, textvariable=self.faf_y_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # FAF Z
         ttk.Label(parent, text="FAF Z (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.faf_z_var = tk.DoubleVar(value=0.5)
+        self.faf_z_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["faf"]["z"]) 
         ttk.Entry(parent, textvariable=self.faf_z_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
@@ -308,143 +425,143 @@ class FlightSimulatorGUI:
     
     def _create_obstacles_config(self, parent):
         """Crée l'onglet de gestion des obstacles (cylindres)"""
-        
+
         # Créer un canvas avec scrollbar pour permettre le défilement
         canvas = tk.Canvas(parent, borderwidth=0, highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
-        
+
         scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
-        
+
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-        
+
         # Bind mouse wheel pour scroll
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
-        
+
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-        
+
         # Contenu de l'onglet dans le frame scrollable
         row = 0
-        
+
         # Titre
-        ttk.Label(scrollable_frame, text="Gestion des Cylindres (Obstacles)", 
-                 font=('Arial', 11, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        ttk.Label(scrollable_frame, text="Gestion des Cylindres (Obstacles)",
+                  font=('Arial', 11, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
         row += 1
-        
-        ttk.Label(scrollable_frame, text="Les cylindres représentent des zones interdites de vol", 
-                 font=('Arial', 8, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        ttk.Label(scrollable_frame, text="Les cylindres représentent des zones interdites de vol",
+                  font=('Arial', 8, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
         row += 1
-        
+
         # Séparateur
         ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
         row += 1
-        
+
         # Section: Ajouter un nouveau cylindre
-        ttk.Label(scrollable_frame, text="➕ Nouveau Cylindre", 
-                 font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        ttk.Label(scrollable_frame, text="➕ Nouveau Cylindre",
+                  font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
         row += 1
-        
+
         # Position X
         ttk.Label(scrollable_frame, text="Position X (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.cyl_x_var = tk.DoubleVar(value=25.0)
+        self.cyl_x_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['x'])
         ttk.Entry(scrollable_frame, textvariable=self.cyl_x_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
-        
+
         # Position Y
         ttk.Label(scrollable_frame, text="Position Y (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.cyl_y_var = tk.DoubleVar(value=25.0)
+        self.cyl_y_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['y'])
         ttk.Entry(scrollable_frame, textvariable=self.cyl_y_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
-        
+
         # Rayon
         ttk.Label(scrollable_frame, text="Rayon (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.cyl_radius_var = tk.DoubleVar(value=2.0)
+        self.cyl_radius_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['radius'])
         ttk.Entry(scrollable_frame, textvariable=self.cyl_radius_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
-        
+
         # Hauteur
         ttk.Label(scrollable_frame, text="Hauteur (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.cyl_height_var = tk.DoubleVar(value=3.0)
+        self.cyl_height_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['height'])
         ttk.Entry(scrollable_frame, textvariable=self.cyl_height_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
-        
+
         # Bouton ajouter
-        ttk.Button(scrollable_frame, text="➕ Ajouter ce Cylindre", 
-                  command=self._add_cylinder).grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
+        ttk.Button(scrollable_frame, text="➕ Ajouter ce Cylindre",
+                   command=self._add_cylinder).grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
         row += 1
-        
+
         # Séparateur
         ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
         row += 1
-        
+
         # Section: Liste des cylindres
-        ttk.Label(scrollable_frame, text="📋 Cylindres Actifs", 
-                 font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        ttk.Label(scrollable_frame, text="📋 Cylindres Actifs",
+                  font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
         row += 1
-        
+
         # Frame avec scrollbar pour la liste des cylindres
         list_container = ttk.Frame(scrollable_frame)
         list_container.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
-        
+
         list_scrollbar = ttk.Scrollbar(list_container)
         list_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        self.cylinders_listbox = tk.Listbox(list_container, height=8, 
-                                             yscrollcommand=list_scrollbar.set, 
-                                             font=('Courier', 9))
+
+        self.cylinders_listbox = tk.Listbox(list_container, height=8,
+                                            yscrollcommand=list_scrollbar.set,
+                                            font=('Courier', 9))
         self.cylinders_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         list_scrollbar.config(command=self.cylinders_listbox.yview)
-        
+
         # Bind double-click pour sélectionner et éditer
         self.cylinders_listbox.bind('<Double-Button-1>', self._edit_selected_cylinder)
-        
+
         row += 1
-        
+
         # Boutons de gestion
         buttons_frame = ttk.Frame(scrollable_frame)
         buttons_frame.grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
-        
-        ttk.Button(buttons_frame, text="✏️ Éditer Sélectionné", 
-                  command=self._edit_selected_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
-        ttk.Button(buttons_frame, text="🗑️ Supprimer Sélectionné", 
-                  command=self._remove_selected_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        ttk.Button(buttons_frame, text="✏️ Éditer Sélectionné",
+                   command=self._edit_selected_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        ttk.Button(buttons_frame, text="🗑️ Supprimer Sélectionné",
+                   command=self._remove_selected_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
         row += 1
-        
+
         buttons_frame2 = ttk.Frame(scrollable_frame)
         buttons_frame2.grid(row=row, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
-        
-        ttk.Button(buttons_frame2, text="🗑️ Supprimer Dernier", 
-                  command=self._remove_last_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
-        ttk.Button(buttons_frame2, text="🗑️ Tout Supprimer", 
-                  command=self._clear_cylinders).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+
+        ttk.Button(buttons_frame2, text="🗑️ Supprimer Dernier",
+                   command=self._remove_last_cylinder).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        ttk.Button(buttons_frame2, text="🗑️ Tout Supprimer",
+                   command=self._clear_cylinders).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
         row += 1
-        
+
         # Séparateur
         ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
         row += 1
-        
+
         # Section: Sauvegarde/Chargement
-        ttk.Label(scrollable_frame, text="💾 Sauvegarde & Chargement", 
-                 font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        ttk.Label(scrollable_frame, text="💾 Sauvegarde & Chargement",
+                  font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
         row += 1
-        
+
         save_buttons_frame = ttk.Frame(scrollable_frame)
         save_buttons_frame.grid(row=row, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
-        
-        ttk.Button(save_buttons_frame, text="💾 Sauvegarder Configuration", 
-                  command=self._save_config).pack(fill=tk.X, pady=2)
-        ttk.Button(save_buttons_frame, text="📂 Charger Configuration", 
-                  command=self._load_config).pack(fill=tk.X, pady=2)
-        
-        # Initialiser la liste des cylindres
-        self.cylinders = []
+
+        ttk.Button(save_buttons_frame, text="💾 Sauvegarder Configuration",
+                   command=self._save_config).pack(fill=tk.X, pady=2)
+        ttk.Button(save_buttons_frame, text="📂 Charger Configuration",
+                   command=self._load_config).pack(fill=tk.X, pady=2)
+
+        # Initialiser la liste des cylindres avec la config par défaut
+        self.cylinders = [dict(c) for c in DEFAULT_CONFIG.get("cylinders", [])]
         
     def _create_aircraft_config(self, parent):
         """Crée la configuration de l'avion"""
@@ -474,31 +591,31 @@ class FlightSimulatorGUI:
         
         # Position X
         ttk.Label(control_frame, text="Position X (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.pos_x_var = tk.DoubleVar(value=0.0)
+        self.pos_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["aircraft"]["position"]["x"])
         ttk.Entry(control_frame, textvariable=self.pos_x_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Position Y
         ttk.Label(control_frame, text="Position Y (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.pos_y_var = tk.DoubleVar(value=0.0)
+        self.pos_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["aircraft"]["position"]["y"])
         ttk.Entry(control_frame, textvariable=self.pos_y_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Altitude
         ttk.Label(control_frame, text="Altitude (km):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.altitude_var = tk.DoubleVar(value=3.0)
+        self.altitude_var = tk.DoubleVar(value=DEFAULT_CONFIG["aircraft"]["position"]["z"])
         ttk.Entry(control_frame, textvariable=self.altitude_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Vitesse
         ttk.Label(control_frame, text="Vitesse (km/h):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.speed_var = tk.DoubleVar(value=250.0)
+        self.speed_var = tk.DoubleVar(value=DEFAULT_CONFIG["aircraft"]["speed"])
         ttk.Entry(control_frame, textvariable=self.speed_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
         # Cap initial avec description détaillée
         ttk.Label(control_frame, text="Cap initial (°):").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.heading_var = tk.DoubleVar(value=90.0)
+        self.heading_var = tk.DoubleVar(value=DEFAULT_CONFIG["aircraft"]["heading"])
         heading_entry = ttk.Entry(control_frame, textvariable=self.heading_var, width=15)
         heading_entry.grid(row=row, column=1, pady=5)
         row += 1
@@ -669,6 +786,7 @@ class FlightSimulatorGUI:
         """Sauvegarde la configuration complète dans un fichier JSON"""
         import json
         import os
+        import sys
         
         try:
             config = {
@@ -700,7 +818,15 @@ class FlightSimulatorGUI:
                 }
             }
             
-            config_file = os.path.join(os.path.dirname(__file__), 'config.json')
+            # Déterminer le répertoire de l'application
+            if getattr(sys, 'frozen', False):
+                # Application empaquetée avec PyInstaller
+                script_dir = os.path.dirname(sys.executable)
+            else:
+                # Script Python normal
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            config_file = os.path.join(script_dir, 'config.json')
             with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=4, ensure_ascii=False)
             
@@ -715,44 +841,78 @@ class FlightSimulatorGUI:
         """Charge silencieusement la configuration au démarrage"""
         import json
         import os
+        import sys
         
         try:
-            # Utiliser le répertoire du script
-            if hasattr(self, '__file__'):
-                script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Déterminer le répertoire de l'application
+            # Pour les exécutables PyInstaller, utiliser le répertoire de l'exe
+            if getattr(sys, 'frozen', False):
+                # Application empaquetée avec PyInstaller
+                script_dir = os.path.dirname(sys.executable)
             else:
-                script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+                # Script Python normal
+                script_dir = os.path.dirname(os.path.abspath(__file__))
             
             config_file = os.path.join(script_dir, 'config.json')
+
+            # Stratégie de chargement:
+            # 1) Si un config.json existe à côté du script/exe, on l'utilise (config utilisateur persistante)
+            # 2) Sinon, si on est en mode PyInstaller, on tente de charger le config.json embarqué dans _MEIPASS
+            #    et on le copie comme base dans le dossier de l'exe pour les prochaines fois
+            # 3) Sinon, on garde les valeurs par défaut codées
+
+            config = None
+            if os.path.exists(config_file):
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            else:
+                # Fallback: config par défaut embarquée dans le bundle PyInstaller
+                if getattr(sys, 'frozen', False):
+                    meipass_dir = getattr(sys, '_MEIPASS', None)
+                    if meipass_dir:
+                        packaged_cfg = os.path.join(meipass_dir, 'config.json')
+                        if os.path.exists(packaged_cfg):
+                            try:
+                                with open(packaged_cfg, 'r', encoding='utf-8') as f:
+                                    config = json.load(f)
+                                # Copier comme base pour les prochaines exécutions
+                                try:
+                                    with open(config_file, 'w', encoding='utf-8') as out:
+                                        json.dump(config, out, indent=4, ensure_ascii=False)
+                                except Exception as copy_err:
+                                    # Pas bloquant si on ne peut pas écrire (dossier protégé, etc.)
+                                    print(f"⚠️  Impossible d'écrire config par défaut à {config_file}: {copy_err}")
+                            except Exception as e:
+                                print(f"⚠️  Échec de lecture du config embarqué: {e}")
+                                config = None
             
-            if not os.path.exists(config_file):
-                return  # Pas de configuration sauvegardée, utiliser les valeurs par défaut
+            if not config:
+                # Pas de config chargeable, utiliser la config par défaut codée
+                config = DEFAULT_CONFIG
             
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-            
+            # À partir d'ici, appliquer la configuration chargée
             # Charger l'environnement
             env = config.get('environment', {})
-            size_x = env.get('size_x', 50)
-            size_y = env.get('size_y', 50)
-            size_z = env.get('size_z', 5)
+            size_x = env.get('size_x', DEFAULT_CONFIG['environment']['size_x'])
+            size_y = env.get('size_y', DEFAULT_CONFIG['environment']['size_y'])
+            size_z = env.get('size_z', DEFAULT_CONFIG['environment']['size_z'])
             
             self.env_size_x_var.set(size_x)
             self.env_size_y_var.set(size_y)
             self.env_size_z_var.set(size_z)
             
             airport = env.get('airport', {})
-            self.airport_x_var.set(airport.get('x', 25))
-            self.airport_y_var.set(airport.get('y', 25))
-            self.airport_z_var.set(airport.get('z', 0))
+            self.airport_x_var.set(airport.get('x', DEFAULT_CONFIG['environment']['airport']['x']))
+            self.airport_y_var.set(airport.get('y', DEFAULT_CONFIG['environment']['airport']['y']))
+            self.airport_z_var.set(airport.get('z', DEFAULT_CONFIG['environment']['airport']['z']))
             
             faf = env.get('faf', {})
-            self.faf_x_var.set(faf.get('x', 15))
-            self.faf_y_var.set(faf.get('y', 15))
-            self.faf_z_var.set(faf.get('z', 1.5))
+            self.faf_x_var.set(faf.get('x', DEFAULT_CONFIG['environment']['faf']['x']))
+            self.faf_y_var.set(faf.get('y', DEFAULT_CONFIG['environment']['faf']['y']))
+            self.faf_z_var.set(faf.get('z', DEFAULT_CONFIG['environment']['faf']['z']))
             
             # Charger les cylindres
-            self.cylinders = config.get('cylinders', [])
+            self.cylinders = config.get('cylinders', DEFAULT_CONFIG.get('cylinders', []))
             
             # Mettre à jour l'affichage de la liste des cylindres
             if hasattr(self, 'cylinders_listbox'):
@@ -760,15 +920,15 @@ class FlightSimulatorGUI:
             
             # Charger l'avion
             aircraft = config.get('aircraft', {})
-            self.aircraft_type_var.set(aircraft.get('type', 'commercial'))
+            self.aircraft_type_var.set(aircraft.get('type', DEFAULT_CONFIG['aircraft']['type']))
             
             position = aircraft.get('position', {})
-            self.pos_x_var.set(position.get('x', 0))
-            self.pos_y_var.set(position.get('y', 0))
-            self.altitude_var.set(position.get('z', 3))
+            self.pos_x_var.set(position.get('x', DEFAULT_CONFIG['aircraft']['position']['x']))
+            self.pos_y_var.set(position.get('y', DEFAULT_CONFIG['aircraft']['position']['y']))
+            self.altitude_var.set(position.get('z', DEFAULT_CONFIG['aircraft']['position']['z']))
             
-            self.speed_var.set(aircraft.get('speed', 250))
-            self.heading_var.set(aircraft.get('heading', 90))
+            self.speed_var.set(aircraft.get('speed', DEFAULT_CONFIG['aircraft']['speed']))
+            self.heading_var.set(aircraft.get('heading', DEFAULT_CONFIG['aircraft']['heading']))
             
         except Exception as e:
             print(f"Erreur lors du chargement de la configuration: {e}")
@@ -778,16 +938,45 @@ class FlightSimulatorGUI:
         """Charge la configuration depuis le fichier JSON (avec message utilisateur)"""
         import json
         import os
+        import sys
         
         try:
-            config_file = os.path.join(os.path.dirname(__file__), 'config.json')
+            # Déterminer le répertoire de l'application
+            if getattr(sys, 'frozen', False):
+                # Application empaquetée avec PyInstaller
+                script_dir = os.path.dirname(sys.executable)
+            else:
+                # Script Python normal
+                script_dir = os.path.dirname(os.path.abspath(__file__))
             
-            if not os.path.exists(config_file):
+            config_file = os.path.join(script_dir, 'config.json')
+
+            config = None
+            source_info = None
+            if os.path.exists(config_file):
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                source_info = config_file
+            else:
+                # Fallback: tenter le config embarqué (première exécution possible)
+                if getattr(sys, 'frozen', False):
+                    meipass_dir = getattr(sys, '_MEIPASS', None)
+                    if meipass_dir:
+                        packaged_cfg = os.path.join(meipass_dir, 'config.json')
+                        if os.path.exists(packaged_cfg):
+                            with open(packaged_cfg, 'r', encoding='utf-8') as f:
+                                config = json.load(f)
+                            source_info = packaged_cfg
+                            # Copier vers le dossier utilisateur pour persistance
+                            try:
+                                with open(config_file, 'w', encoding='utf-8') as out:
+                                    json.dump(config, out, indent=4, ensure_ascii=False)
+                            except Exception as copy_err:
+                                print(f"⚠️  Impossible d'écrire config par défaut à {config_file}: {copy_err}")
+
+            if not config:
                 messagebox.showinfo("Info", "Aucune configuration sauvegardée trouvée")
                 return
-            
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = json.load(f)
             
             # Charger l'environnement
             env = config.get('environment', {})
@@ -824,7 +1013,7 @@ class FlightSimulatorGUI:
             # Appliquer la configuration de l'environnement
             self._apply_environment_config()
             
-            messagebox.showinfo("Succès", f"Configuration chargée depuis:\n{config_file}\n\n"
+            messagebox.showinfo("Succès", f"Configuration chargée depuis:\n{source_info}\n\n"
                                          f"Environnement: {self.env_size_x_var.get()}x{self.env_size_y_var.get()}x{self.env_size_z_var.get()} km\n"
                                          f"Cylindres: {len(self.cylinders)}\n"
                                          f"Type d'avion: {self.aircraft_type_var.get()}")
@@ -1738,6 +1927,16 @@ class FlightSimulatorGUI:
 
 def main():
     """Point d'entrée principal"""
+    # Sous Windows, définir l'AppUserModelID AVANT de créer la fenêtre
+    # pour s'assurer que la barre des tâches affiche la bonne icône et le bon groupement
+    import sys
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            myappid = 'estaca.trajectoireavion.simulateur.v1'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception:
+            pass
     root = tk.Tk()
     app = FlightSimulatorGUI(root)
     root.mainloop()

@@ -16,20 +16,20 @@
     },
     "cylinders": [
         {
-            "x": 55.0,
-            "y": 25.0,
-            "radius": 10.0,
+            "x": 50.0,
+            "y": 50.0,
+            "radius": 2.0,
             "height": 3.0
         }
     ],
     "aircraft": {
-        "type": "light",
+        "type": "commercial",
         "position": {
-            "x": 78.0,
-            "y": 24.0,
-            "z": 2.0
+            "x": 70.0,
+            "y": 70.0,
+            "z": 3.0
         },
-        "speed": 180.0,
-        "heading": 90.0
+        "speed": 250.0,
+        "heading": 180.0
     }
 }
