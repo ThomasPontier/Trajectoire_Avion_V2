@@ -85,9 +85,6 @@ class Aircraft:
         self.max_descent_slope = self.specs["max_descent_slope"]
         self.max_bank_angle = self.specs["max_bank_angle"]
         
-        # Paramètres pour versions futures
-        self.min_turn_radius = None  # Sera ajouté dans la version 1.2
-        
     def get_velocity_vector(self):
         """
         Calcule le vecteur vitesse basé sur le cap et la vitesse
