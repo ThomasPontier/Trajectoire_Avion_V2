@@ -3,6 +3,7 @@ Module de calcul de trajectoire optimale
 """
 
 import numpy as np
+from aircraft import Aircraft
 
 
 class TrajectoryCalculator:
@@ -226,8 +227,20 @@ class TrajectoryCalculator:
                 pos[2] = descent_start_altitude + t * remaining_altitude
                 trajectory.append(pos)
         
-        # S'assurer qu'on finit exactement au FAF
+        # S'assurer qu'on finit exactement au FAF avec une transition d'altitude douce
         if len(trajectory) > 0:
+            # Au lieu de forcer brutalement, faire une transition douce sur les derniers points
+            n_smooth_points = min(50, len(trajectory) // 10)  # 50 points ou 10% de la trajectoire
+            if n_smooth_points > 0 and len(trajectory) >= n_smooth_points:
+                for i in range(n_smooth_points):
+                    idx = len(trajectory) - n_smooth_points + i
+                    if idx >= 0:
+                        t = i / (n_smooth_points - 1)
+                        # Transition douce vers la position FAF exacte
+                        trajectory[idx][:2] = (1 - t) * trajectory[idx][:2] + t * target_pos[:2]
+                        trajectory[idx][2] = (1 - t) * trajectory[idx][2] + t * target_pos[2]
+            
+            # Dernière position exactement au FAF
             trajectory[-1] = target_pos.copy()
         
         trajectory = np.array(trajectory)
@@ -709,7 +722,19 @@ class TrajectoryCalculator:
         # Combiner tous les segments
         trajectory = np.vstack(segments)
         
-        # S'assurer que le dernier point est exactement au FAF
+        # S'assurer que le dernier point est exactement au FAF avec transition douce
+        # Faire une transition douce sur les derniers points vers le FAF
+        n_smooth_final = min(100, len(trajectory) // 20)  # Points pour transition finale
+        if n_smooth_final > 0:
+            for i in range(n_smooth_final):
+                idx = len(trajectory) - n_smooth_final + i
+                if idx >= 0:
+                    t = i / (n_smooth_final - 1)
+                    # Transition progressive vers FAF en position ET en altitude
+                    trajectory[idx][:2] = (1 - t) * trajectory[idx][:2] + t * faf_pos[:2]
+                    trajectory[idx][2] = (1 - t) * trajectory[idx][2] + t * faf_pos[2]
+        
+        # Dernière position exactement au FAF
         trajectory[-1] = faf_pos
         
         # VALIDATION CRITIQUE: Vérifier qu'aucun point ne traverse les obstacles
@@ -834,8 +859,23 @@ class TrajectoryCalculator:
                         print(f"   ⚠️  Collision persistante (tentative {attempt + 1})")
                 
                 else:
-                    print(f"\n   ⛔ ÉCHEC: Impossible de trouver une trajectoire sans collision après 5 tentatives")
-                    print(f"   ℹ️  La trajectoire affichée traverse les obstacles - ATTENTION !")
+                    print(f"\n   ⛔ ÉCHEC avec marges normales - TENTATIVE DE CONTOURNEMENT FORCÉ")
+                    
+                    # Essayer un contournement forcé avec waypoints très éloignés
+                    print(f"   🚀 Calcul de contournement d'urgence avec waypoints sécurisés...")
+                    
+                    emergency_trajectory = self._calculate_emergency_avoidance_trajectory(
+                        start_pos, faf_pos, aircraft, cylinders, waypoints_2d
+                    )
+                    
+                    if emergency_trajectory is not None:
+                        print(f"   ✅ CONTOURNEMENT D'URGENCE RÉUSSI")
+                        trajectory = emergency_trajectory
+                    else:
+                        print(f"   ⛔ ÉCHEC TOTAL: Impossible d'éviter les obstacles")
+                        print(f"   🚫 REFUS ABSOLU: Aucune trajectoire ne sera retournée")
+                        # SÉCURITÉ ABSOLUE : ne jamais retourner une trajectoire avec collision
+                        return None, {}
             else:
                 print(f"   ✅ Aucune collision - Trajectoire VALIDE")
         
@@ -934,6 +974,20 @@ class TrajectoryCalculator:
                 descent_so_far = transition_distance * abs(np.tan(max_descent_slope_rad))
                 additional_descent = descent_distance * abs(np.tan(max_descent_slope_rad))
                 trajectory[i, 2] = start_pos[2] - descent_so_far - additional_descent
+        
+        # Finir exactement au FAF avec transition douce d'altitude
+        # Lisser les derniers points pour éviter une chute brutale
+        n_smooth_end = min(200, len(trajectory) // 5)  # Points pour lissage final
+        if n_smooth_end > 0 and len(trajectory) > n_smooth_end:
+            target_altitude = faf_pos[2]
+            start_smooth_idx = len(trajectory) - n_smooth_end
+            start_altitude = trajectory[start_smooth_idx][2]
+            
+            for i in range(n_smooth_end):
+                idx = start_smooth_idx + i
+                t = i / (n_smooth_end - 1)
+                # Progression douce de l'altitude vers le FAF
+                trajectory[idx][2] = start_altitude + t * (target_altitude - start_altitude)
         
         # Finir exactement au FAF
         trajectory[-1] = faf_pos
@@ -1528,6 +1582,667 @@ class TrajectoryCalculator:
         # Pour l'instant, on utilise la trajectoire simple
         return self.calculate_trajectory(aircraft)
     
+    def _check_slope_feasibility(self, aircraft, start_pos, target_pos):
+        """
+        Vérifie si la pente nécessaire pour atteindre le FAF respecte les contraintes
+        
+        Args:
+            aircraft: Instance de la classe Aircraft
+            start_pos: Position de départ [x, y, z]
+            target_pos: Position cible (FAF) [x, y, z]
+            
+        Returns:
+            tuple: (is_feasible, required_slope, excess_altitude)
+        """
+        # Distance horizontale directe
+        horizontal_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
+        altitude_diff = target_pos[2] - start_pos[2]
+        
+        if horizontal_distance < 0.01:
+            return True, 0.0, 0.0
+        
+        # Pente nécessaire (en degrés)
+        required_slope = np.degrees(np.arctan(altitude_diff / horizontal_distance))
+        
+        # Vérifier si on dépasse la pente maximale de descente
+        max_descent = abs(aircraft.max_descent_slope)  # Valeur positive
+        
+        if altitude_diff < 0 and abs(required_slope) > max_descent:
+            # Calcul de l'altitude excédentaire qui nécessite des tours
+            min_descent_distance = abs(altitude_diff) / np.tan(np.radians(max_descent))
+            excess_altitude = abs(altitude_diff) - (horizontal_distance * np.tan(np.radians(max_descent)))
+            return False, required_slope, excess_altitude
+        
+        return True, required_slope, 0.0
+    
+    def _calculate_altitude_reduction_turns(self, aircraft, start_pos, target_pos, excess_altitude, cylinders=None):
+        """
+        Calcule des tours en spirale pour réduire l'altitude excédentaire avec évitement d'obstacles
+        
+        Args:
+            aircraft: Instance de la classe Aircraft
+            start_pos: Position de départ [x, y, z]
+            target_pos: Position cible (FAF) [x, y, z]
+            excess_altitude: Altitude excédentaire à perdre via des tours
+            cylinders: Liste des obstacles à éviter
+            
+        Returns:
+            tuple: (spiral_trajectory, final_position)
+        """
+        if cylinders is None:
+            cylinders = []
+            
+        print(f"\n🌀 CALCUL DE TOURS POUR RÉDUCTION D'ALTITUDE AVEC ÉVITEMENT")
+        print("-" * 60)
+        print(f"💡 Altitude excédentaire à perdre: {excess_altitude:.2f} km")
+        print(f"🚧 Obstacles à éviter: {len(cylinders)}")
+        
+        # Paramètres de la spirale avec sécurité renforcée
+        turn_radius = aircraft.calculate_min_turn_radius()
+        
+        # Ajuster le rayon si nécessaire pour éviter les obstacles
+        adjusted_radius = self._adjust_turn_radius_for_obstacles(turn_radius, start_pos, cylinders)
+        if adjusted_radius != turn_radius:
+            print(f"🔄 Rayon de virage ajusté: {turn_radius:.3f} → {adjusted_radius:.3f} km (évitement obstacles)")
+            turn_radius = adjusted_radius
+        else:
+            print(f"🔄 Rayon de virage: {turn_radius:.3f} km")
+        
+        # Vitesse de descente pendant les tours (conservatrice pour sécurité)
+        # Réduire encore plus si obstacles proches
+        safety_factor = 0.6 if cylinders else 0.7  # Plus conservateur avec obstacles
+        safe_descent_rate = abs(aircraft.max_descent_slope) * safety_factor
+        print(f"⬇️  Taux de descente pendant tours: {safe_descent_rate:.1f}° (facteur sécurité: {safety_factor})")
+        
+        # Calculer le nombre de tours nécessaires
+        turn_circumference = 2 * np.pi * turn_radius
+        descent_per_turn = turn_circumference * np.tan(np.radians(safe_descent_rate))
+        num_turns = excess_altitude / descent_per_turn
+        
+        # Limiter le nombre de tours pour éviter la spirale infinie
+        max_turns = 5.0  # Maximum 5 tours
+        if num_turns > max_turns:
+            print(f"⚠️  Limitation du nombre de tours: {num_turns:.1f} → {max_turns}")
+            num_turns = max_turns
+            # Recalculer le taux de descente nécessaire
+            required_descent_per_turn = excess_altitude / num_turns
+            required_descent_rate = np.degrees(np.arctan(required_descent_per_turn / turn_circumference))
+            
+            # Vérifier que c'est encore sûr
+            max_safe_rate = abs(aircraft.max_descent_slope) * 0.9
+            if required_descent_rate > max_safe_rate:
+                print(f"⚠️  Taux de descente requis trop élevé: {required_descent_rate:.1f}° > {max_safe_rate:.1f}°")
+                # Utiliser le taux maximum et accepter de ne pas perdre toute l'altitude
+                safe_descent_rate = max_safe_rate
+                achievable_descent = num_turns * turn_circumference * np.tan(np.radians(safe_descent_rate))
+                print(f"💡 Altitude réellement perdue dans les tours: {achievable_descent:.2f} km sur {excess_altitude:.2f} km")
+            else:
+                safe_descent_rate = required_descent_rate
+        
+        print(f"📐 Périmètre par tour: {turn_circumference:.2f} km")
+        print(f"📉 Descente par tour: {turn_circumference * np.tan(np.radians(safe_descent_rate)):.3f} km")
+        print(f"🔢 Nombre de tours: {num_turns:.1f}")
+        
+        # Choisir une position pour la spirale qui évite les obstacles
+        spiral_center = self._find_safe_spiral_center(start_pos, target_pos, turn_radius, cylinders)
+        
+        # Vérifier que la spirale complète évite les obstacles
+        spiral_is_safe = self._verify_spiral_clearance(spiral_center, turn_radius, start_pos[2], cylinders)
+        if not spiral_is_safe:
+            print(f"⚠️  Spirale initiale non sûre, recherche position alternative...")
+            spiral_center = self._find_alternative_spiral_center(start_pos, target_pos, turn_radius, cylinders)
+        
+        print(f"⭕ Centre de spirale final: ({spiral_center[0]:.1f}, {spiral_center[1]:.1f}) km")
+        
+        # Générer la trajectoire en spirale avec évitement intégré
+        spiral_trajectory = self._generate_spiral_trajectory(
+            start_pos, spiral_center, turn_radius, num_turns, 
+            min(excess_altitude, num_turns * turn_circumference * np.tan(np.radians(safe_descent_rate))),
+            safe_descent_rate
+        )
+        
+        # Vérification finale de non-collision
+        collision_check = self._check_trajectory_collision(spiral_trajectory, cylinders)
+        if collision_check[0]:  # Si collision détectée
+            print(f"❌ COLLISION DÉTECTÉE dans la spirale ! Ajustement d'urgence...")
+            # Déplacer la spirale plus loin des obstacles
+            safe_center = self._emergency_spiral_positioning(start_pos, target_pos, turn_radius, cylinders)
+            spiral_trajectory = self._generate_spiral_trajectory(
+                start_pos, safe_center, turn_radius * 1.2, num_turns * 0.8, 
+                excess_altitude * 0.8, safe_descent_rate
+            )
+        
+        # Position finale après les tours
+        final_position = spiral_trajectory[-1].copy()
+        altitude_lost = start_pos[2] - final_position[2]
+        
+        print(f"🎯 Position finale après tours: ({final_position[0]:.1f}, {final_position[1]:.1f}, {final_position[2]:.1f}) km")
+        print(f"✅ Altitude perdue: {altitude_lost:.2f} km (objectif: {excess_altitude:.2f} km)")
+        
+        if altitude_lost < excess_altitude * 0.9:
+            print(f"💡 Note: Altitude restante à perdre sera gérée par descente normale vers FAF")
+        
+        return spiral_trajectory, final_position
+    
+    def _adjust_turn_radius_for_obstacles(self, base_radius, start_pos, cylinders):
+        """
+        Ajuste le rayon de virage pour éviter les obstacles proches
+        
+        Args:
+            base_radius: Rayon de virage minimum de l'avion
+            start_pos: Position de départ
+            cylinders: Liste des obstacles
+            
+        Returns:
+            float: Rayon ajusté
+        """
+        if not cylinders:
+            return base_radius
+        
+        adjusted_radius = base_radius
+        
+        for cylinder in cylinders:
+            cyl_center = np.array([cylinder['x'], cylinder['y']])
+            dist_to_obstacle = np.linalg.norm(start_pos[:2] - cyl_center)
+            
+            # Si l'obstacle est proche, augmenter le rayon pour maintenir la distance de sécurité
+            safety_distance = cylinder['radius'] + 1.5  # 1.5 km de marge
+            required_radius = max(base_radius, dist_to_obstacle - safety_distance)
+            
+            if required_radius > adjusted_radius:
+                adjusted_radius = required_radius
+        
+        # Limiter l'augmentation à 50% du rayon de base
+        return min(adjusted_radius, base_radius * 1.5)
+    
+    def _verify_spiral_clearance(self, center, radius, altitude, cylinders):
+        """
+        Vérifie que la spirale complète évite tous les obstacles
+        
+        Args:
+            center: Centre de la spirale
+            radius: Rayon de la spirale
+            altitude: Altitude de vol approximative
+            cylinders: Liste des obstacles
+            
+        Returns:
+            bool: True si la spirale est sûre
+        """
+        for cylinder in cylinders:
+            if altitude <= cylinder['height'] + 0.5:  # Marge verticale
+                cyl_center = np.array([cylinder['x'], cylinder['y']])
+                dist_center_to_obstacle = np.linalg.norm(center - cyl_center)
+                required_clearance = radius + cylinder['radius'] + 0.8  # Marge de sécurité
+                
+                if dist_center_to_obstacle < required_clearance:
+                    return False
+        
+        return True
+    
+    def _find_alternative_spiral_center(self, start_pos, target_pos, turn_radius, cylinders):
+        """
+        Trouve un centre de spirale alternatif éloigné de tous les obstacles
+        
+        Args:
+            start_pos: Position de départ
+            target_pos: Position cible
+            turn_radius: Rayon de virage
+            cylinders: Liste des obstacles
+            
+        Returns:
+            numpy array: Position alternative du centre
+        """
+        # Calculer le point le plus éloigné de tous les obstacles
+        best_center = start_pos[:2] + np.array([turn_radius * 2, 0])  # Position par défaut
+        max_min_distance = 0
+        
+        # Grille de recherche autour de la position de départ
+        search_radius = turn_radius * 4
+        grid_size = 20
+        
+        for i in range(grid_size):
+            for j in range(grid_size):
+                # Position candidate
+                angle = (i * 2 * np.pi) / grid_size
+                distance = (j + 1) * search_radius / grid_size
+                
+                candidate = start_pos[:2] + distance * np.array([np.cos(angle), np.sin(angle)])
+                
+                # Calculer la distance minimum à tous les obstacles
+                min_dist_to_obstacles = float('inf')
+                for cylinder in cylinders:
+                    cyl_center = np.array([cylinder['x'], cylinder['y']])
+                    dist = np.linalg.norm(candidate - cyl_center) - cylinder['radius']
+                    min_dist_to_obstacles = min(min_dist_to_obstacles, dist)
+                
+                # Garder la position avec la plus grande distance minimum
+                if min_dist_to_obstacles > max_min_distance:
+                    max_min_distance = min_dist_to_obstacles
+                    best_center = candidate
+        
+        return best_center
+    
+    def _emergency_spiral_positioning(self, start_pos, target_pos, turn_radius, cylinders):
+        """
+        Positionnement d'urgence pour spirale en cas de collision
+        
+        Args:
+            start_pos: Position de départ
+            target_pos: Position cible
+            turn_radius: Rayon de virage
+            cylinders: Liste des obstacles
+            
+        Returns:
+            numpy array: Position d'urgence du centre
+        """
+        # Aller le plus loin possible des obstacles
+        if not cylinders:
+            return start_pos[:2] + np.array([turn_radius * 3, 0])
+        
+        # Trouver le point le plus éloigné dans un rayon raisonnable
+        max_distance = 0
+        best_position = start_pos[:2]
+        
+        for angle in np.linspace(0, 2*np.pi, 16):
+            for dist in [turn_radius * 3, turn_radius * 4, turn_radius * 5]:
+                test_pos = start_pos[:2] + dist * np.array([np.cos(angle), np.sin(angle)])
+                
+                min_dist_to_obstacles = float('inf')
+                for cylinder in cylinders:
+                    cyl_center = np.array([cylinder['x'], cylinder['y']])
+                    dist_to_cyl = np.linalg.norm(test_pos - cyl_center)
+                    min_dist_to_obstacles = min(min_dist_to_obstacles, dist_to_cyl)
+                
+                if min_dist_to_obstacles > max_distance:
+                    max_distance = min_dist_to_obstacles
+                    best_position = test_pos
+        
+        return best_position
+    
+    def _find_safe_spiral_center(self, start_pos, target_pos, turn_radius, cylinders):
+        """
+        Trouve un centre de spirale sûr qui évite les obstacles avec analyse détaillée
+        
+        Args:
+            start_pos: Position de départ [x, y, z]
+            target_pos: Position cible [x, y, z]
+            turn_radius: Rayon de virage
+            cylinders: Liste des obstacles
+            
+        Returns:
+            numpy array: Position du centre de spirale [x, y]
+        """
+        print(f"   🔍 Recherche centre de spirale sûr (rayon: {turn_radius:.3f} km)")
+        
+        # Direction vers le FAF pour orientation
+        direction_to_faf = target_pos[:2] - start_pos[:2]
+        if np.linalg.norm(direction_to_faf) > 0.01:
+            direction_to_faf = direction_to_faf / np.linalg.norm(direction_to_faf)
+        else:
+            direction_to_faf = np.array([1.0, 0.0])
+        
+        # Vecteurs perpendiculaires (droite et gauche)
+        perp_right = np.array([-direction_to_faf[1], direction_to_faf[0]])
+        perp_left = -perp_right
+        
+        # Marges de sécurité variables selon la distance aux obstacles
+        base_safety_margin = 0.8  # Marge de base
+        
+        # Analyser les obstacles pour déterminer la meilleure stratégie
+        if cylinders:
+            print(f"   🚧 Analyse de {len(cylinders)} obstacle(s):")
+            for i, cyl in enumerate(cylinders):
+                dist_to_start = np.linalg.norm(np.array([cyl['x'], cyl['y']]) - start_pos[:2])
+                print(f"      Obstacle {i+1}: centre=({cyl['x']:.1f}, {cyl['y']:.1f}), "
+                      f"rayon={cyl['radius']:.2f} km, distance={dist_to_start:.2f} km")
+        
+        # Essayer différentes positions avec analyse fine
+        best_center = None
+        best_score = -1  # Score de qualité (plus élevé = meilleur)
+        
+        # Directions à tester (droite, gauche, arrière-droite, arrière-gauche)
+        test_directions = [perp_right, perp_left, 
+                          (perp_right - direction_to_faf).astype(float), 
+                          (perp_left - direction_to_faf).astype(float)]
+        
+        # Normaliser les directions diagonales
+        for i in range(2, len(test_directions)):
+            test_directions[i] = test_directions[i] / np.linalg.norm(test_directions[i])
+        
+        direction_names = ["droite", "gauche", "arrière-droite", "arrière-gauche"]
+        
+        for dir_idx, test_direction in enumerate(test_directions):
+            for distance_factor in [1.2, 1.5, 2.0, 2.5, 3.0]:  # Distances croissantes
+                test_center = start_pos[:2] + test_direction * turn_radius * distance_factor
+                
+                # Calculer le score de cette position
+                score = self._evaluate_spiral_center_safety(
+                    test_center, turn_radius, cylinders, start_pos, target_pos, base_safety_margin
+                )
+                
+                if score > best_score:
+                    best_score = score
+                    best_center = test_center
+                    print(f"   ⭐ Nouveau meilleur centre: {direction_names[dir_idx]} "
+                          f"(distance {distance_factor:.1f}x, score {score:.2f})")
+                
+                # Si on trouve un score parfait, pas besoin de chercher plus
+                if score >= 10.0:
+                    break
+            
+            if best_score >= 10.0:
+                break
+        
+        if best_center is not None:
+            print(f"   ✅ Centre optimal trouvé avec score {best_score:.2f}")
+            return best_center
+        else:
+            # Fallback : position par défaut éloignée des obstacles
+            default_center = start_pos[:2] + perp_right * turn_radius * 3.0
+            print(f"   ⚠️  Aucun centre optimal, utilisation position de secours")
+            return default_center
+    
+    def _evaluate_spiral_center_safety(self, center, turn_radius, cylinders, start_pos, target_pos, base_margin):
+        """
+        Évalue la sécurité d'un centre de spirale (score de 0 à 10+)
+        
+        Args:
+            center: Position du centre testé [x, y]
+            turn_radius: Rayon de virage
+            cylinders: Liste des obstacles
+            start_pos: Position de départ
+            target_pos: Position cible
+            base_margin: Marge de sécurité de base
+            
+        Returns:
+            float: Score de sécurité (0 = dangereux, 10+ = excellent)
+        """
+        score = 10.0  # Score de base
+        
+        # Vérifier les collisions avec obstacles
+        for cylinder in cylinders:
+            cyl_center = np.array([cylinder['x'], cylinder['y']])
+            cyl_radius = cylinder['radius']
+            cyl_height = cylinder['height']
+            
+            # Distance entre le centre de spirale et l'obstacle
+            dist_center_to_obstacle = np.linalg.norm(center - cyl_center)
+            
+            # Distance minimale requise (rayon spirale + rayon obstacle + marge)
+            required_clearance = turn_radius + cyl_radius + base_margin
+            
+            if dist_center_to_obstacle < required_clearance:
+                # Collision ! Score très bas
+                overlap = required_clearance - dist_center_to_obstacle
+                score -= overlap * 5.0  # Pénalité importante pour collision
+            else:
+                # Bonus pour distance de sécurité supplémentaire
+                extra_clearance = dist_center_to_obstacle - required_clearance
+                score += min(extra_clearance * 0.5, 2.0)  # Bonus limité
+            
+            # Vérifier si l'altitude de vol est compatible
+            flight_altitude = start_pos[2]  # Altitude approximative pendant les tours
+            if flight_altitude <= cyl_height + 0.3:  # Marge verticale de 300m
+                # Obstacle peut affecter la trajectoire verticalement
+                vertical_clearance = flight_altitude - cyl_height
+                if vertical_clearance < 0.5:  # Moins de 500m de marge
+                    score -= (0.5 - vertical_clearance) * 3.0
+        
+        # Bonus pour proximité raisonnable du point de départ
+        dist_to_start = np.linalg.norm(center - start_pos[:2])
+        if dist_to_start < turn_radius * 4:  # Pas trop loin
+            score += 1.0
+        elif dist_to_start > turn_radius * 6:  # Trop loin
+            score -= (dist_to_start - turn_radius * 6) * 0.2
+        
+        # Bonus pour orientation favorable vers le FAF
+        to_faf = target_pos[:2] - start_pos[:2]
+        to_center = center - start_pos[:2]
+        if np.linalg.norm(to_faf) > 0.01 and np.linalg.norm(to_center) > 0.01:
+            cos_angle = np.dot(to_faf, to_center) / (np.linalg.norm(to_faf) * np.linalg.norm(to_center))
+            if cos_angle < 0:  # Centre dans la direction opposée au FAF (bon pour spirale)
+                score += abs(cos_angle) * 1.5
+        
+        return max(0.0, score)  # Score ne peut pas être négatif
+    
+    def _generate_spiral_trajectory(self, start_pos, spiral_center, turn_radius, num_turns, total_descent, descent_rate):
+        """
+        Génère la trajectoire en spirale avec transitions douces et respect des taux de virage
+        
+        Args:
+            start_pos: Position de départ [x, y, z]
+            spiral_center: Centre de la spirale [x, y]
+            turn_radius: Rayon de virage
+            num_turns: Nombre de tours à effectuer
+            total_descent: Altitude totale à perdre
+            descent_rate: Taux de descente en degrés
+            
+        Returns:
+            numpy array: Points de la trajectoire [N x 3]
+        """
+        # Angle total à parcourir
+        total_angle = num_turns * 2 * np.pi
+        
+        # Nombre de points (très haute densité pour trajectoire ultra-lisse)
+        points_per_turn = 720  # 2 points par degré pour maximum de fluidité
+        total_points = int(num_turns * points_per_turn)
+        total_points = max(200, total_points)  # Minimum 200 points
+        
+        # Angle initial (de la position de départ vers le centre)
+        initial_vec = start_pos[:2] - spiral_center
+        initial_angle = np.arctan2(initial_vec[1], initial_vec[0])
+        
+        # Phases de la spirale pour transitions douces
+        entry_phase = 0.15    # 15% pour l'entrée en spirale
+        stable_phase = 0.70   # 70% pour la spirale stable
+        exit_phase = 0.15     # 15% pour la sortie de spirale
+        
+        # Générer la trajectoire avec transitions progressives
+        trajectory = np.zeros((total_points, 3))
+        
+        for i in range(total_points):
+            # Progression de 0 à 1
+            t = i / (total_points - 1)
+            
+            # Déterminer la phase actuelle
+            if t < entry_phase:
+                # Phase d'entrée : transition douce vers la spirale
+                phase_t = t / entry_phase
+                # Fonction de transition smooth (évite les à-coups)
+                smooth_factor = self._smooth_transition(phase_t)
+                
+                # Rayon qui augmente progressivement vers le rayon de virage
+                current_radius = turn_radius * smooth_factor
+                # Angle avec progression ralentie au début
+                angle_progress = smooth_factor * (entry_phase * total_angle)
+                
+                # Descente ralentie pendant l'entrée (évite pic de chute)
+                descent_factor = smooth_factor * 0.5  # Descente réduite pendant l'entrée
+                
+            elif t < entry_phase + stable_phase:
+                # Phase stable : spirale constante
+                phase_start = entry_phase
+                phase_t = (t - phase_start) / stable_phase
+                
+                current_radius = turn_radius  # Rayon constant
+                angle_progress = entry_phase * total_angle + phase_t * (stable_phase * total_angle)
+                
+                # Descente constante et progressive
+                descent_factor = 0.5 + phase_t * 0.4  # De 50% à 90% du taux normal
+                
+            else:
+                # Phase de sortie : transition douce vers trajectoire normale
+                phase_start = entry_phase + stable_phase
+                phase_t = (t - phase_start) / exit_phase
+                # Fonction de transition inverse pour sortie douce
+                smooth_factor = 1.0 - self._smooth_transition(phase_t)
+                
+                current_radius = turn_radius * (0.7 + 0.3 * smooth_factor)  # Rayon qui se stabilise
+                angle_progress = (entry_phase + stable_phase) * total_angle + phase_t * (exit_phase * total_angle)
+                
+                # Descente qui se stabilise vers la fin
+                descent_factor = 0.9 + phase_t * 0.1  # De 90% à 100%
+            
+            # Angle actuel
+            angle = initial_angle + angle_progress
+            
+            # Position horizontale avec rayon variable pour transitions douces
+            x = spiral_center[0] + current_radius * np.cos(angle)
+            y = spiral_center[1] + current_radius * np.sin(angle)
+            
+            # Altitude avec descente progressive et sans à-coups
+            # Utilisation d'une fonction smooth pour éviter les pics
+            base_descent = t * total_descent
+            smooth_descent = base_descent * descent_factor
+            
+            # Application d'une fonction de lissage supplémentaire
+            if i > 0:
+                # Éviter les variations trop brusques d'altitude
+                prev_altitude = trajectory[i-1, 2]
+                target_altitude = start_pos[2] - smooth_descent
+                max_altitude_change = 0.01  # Limite la variation d'altitude entre points (10m)
+                
+                altitude_change = target_altitude - prev_altitude
+                if abs(altitude_change) > max_altitude_change:
+                    altitude_change = np.sign(altitude_change) * max_altitude_change
+                
+                z = prev_altitude + altitude_change
+            else:
+                z = start_pos[2] - smooth_descent
+            
+            trajectory[i] = [x, y, z]
+        
+        # Vérification et lissage final pour éviter les discontinuités
+        trajectory = self._smooth_trajectory(trajectory)
+        
+        print(f"   🌀 Spirale générée avec transitions douces: {len(trajectory)} points sur {num_turns:.1f} tours")
+        print(f"   📐 Points par tour: {points_per_turn} (haute densité)")
+        print(f"   🔄 Phases: entrée {entry_phase*100:.0f}%, stable {stable_phase*100:.0f}%, sortie {exit_phase*100:.0f}%")
+        return trajectory
+    
+    def _smooth_transition(self, t):
+        """
+        Fonction de transition ultra-douce (smoothstep de degré 5)
+        Garantit des dérivées nulles en 0 et 1 pour éviter les à-coups
+        
+        Args:
+            t: Paramètre de 0 à 1
+            
+        Returns:
+            float: Valeur lissée de 0 à 1
+        """
+        # Smoothstep de degré 5: f(t) = 6t^5 - 15t^4 + 10t^3
+        t = np.clip(t, 0.0, 1.0)
+        return 6 * t**5 - 15 * t**4 + 10 * t**3
+    
+    def _smooth_trajectory(self, trajectory):
+        """
+        Applique un lissage final sur la trajectoire pour éliminer les discontinuités
+        
+        Args:
+            trajectory: Trajectoire à lisser [N x 3]
+            
+        Returns:
+            numpy array: Trajectoire lissée
+        """
+        if len(trajectory) < 3:
+            return trajectory
+        
+        smoothed = trajectory.copy()
+        
+        # Lissage par moyenne mobile pondérée sur l'altitude uniquement
+        for i in range(1, len(trajectory) - 1):
+            # Pondération: 25% point précédent, 50% point actuel, 25% point suivant
+            smoothed[i, 2] = (0.25 * trajectory[i-1, 2] + 
+                             0.50 * trajectory[i, 2] + 
+                             0.25 * trajectory[i+1, 2])
+        
+        return smoothed
+    
+    def calculate_trajectory_with_automatic_turns(self, aircraft, cylinders=None):
+        """
+        Calcule la trajectoire avec tours automatiques si la pente nécessaire dépasse le maximum
+        
+        Cette méthode:
+        1. Vérifie si la pente directe vers le FAF est faisable
+        2. Si non, calcule des tours en spirale pour perdre l'altitude excédentaire
+        3. Puis calcule une trajectoire normale vers le FAF
+        
+        Args:
+            aircraft: Instance de la classe Aircraft
+            cylinders: Liste optionnelle de cylindres (obstacles) à éviter
+            
+        Returns:
+            tuple: (trajectory, parameters)
+        """
+        if cylinders is None:
+            cylinders = []
+            
+        start_pos = aircraft.position.copy()
+        faf_pos = self.environment.faf_position.copy()
+        
+        print("\n" + "="*70)
+        print("🛩️  CALCUL TRAJECTOIRE AVEC TOURS AUTOMATIQUES POUR PENTE")
+        print("="*70)
+        
+        # Vérifier la faisabilité de la pente directe
+        is_feasible, required_slope, excess_altitude = self._check_slope_feasibility(aircraft, start_pos, faf_pos)
+        
+        print(f"📊 Analyse de pente:")
+        print(f"   Position avion: ({start_pos[0]:.1f}, {start_pos[1]:.1f}, {start_pos[2]:.1f}) km")
+        print(f"   Position FAF: ({faf_pos[0]:.1f}, {faf_pos[1]:.1f}, {faf_pos[2]:.1f}) km")
+        
+        # Calculs détaillés pour debug
+        horizontal_distance = np.linalg.norm(faf_pos[:2] - start_pos[:2])
+        altitude_diff = start_pos[2] - faf_pos[2]
+        print(f"   Distance horizontale: {horizontal_distance:.2f} km")
+        print(f"   Différence d'altitude: {altitude_diff:.2f} km")
+        print(f"   Pente nécessaire: {required_slope:.1f}°")
+        print(f"   Pente max autorisée: {abs(aircraft.max_descent_slope):.1f}°")
+        print(f"   Altitude excédentaire: {excess_altitude:.2f} km")
+        
+        if is_feasible:
+            print(f"✅ Pente faisable - trajectoire normale")
+            return self.calculate_trajectory(aircraft, cylinders)
+        
+        print(f"❌ Pente trop forte - tours automatiques nécessaires")
+        print(f"💡 Altitude excédentaire: {excess_altitude:.2f} km")
+        
+        # Calculer les tours pour réduire l'altitude
+        spiral_trajectory, final_position = self._calculate_altitude_reduction_turns(
+            aircraft, start_pos, faf_pos, excess_altitude, cylinders
+        )
+        
+        # Créer un avion virtuel à la position finale des tours
+        aircraft_after_turns = Aircraft(
+            position=final_position,
+            speed=aircraft.speed,
+            heading=aircraft.heading,
+            aircraft_type=aircraft.aircraft_type
+        )
+        
+        # Calculer la trajectoire finale vers le FAF
+        print(f"\n🎯 Calcul trajectoire finale vers FAF...")
+        final_trajectory, final_parameters = self.calculate_trajectory(aircraft_after_turns, cylinders)
+        
+        # Combiner les deux trajectoires
+        combined_trajectory = np.vstack([spiral_trajectory, final_trajectory])
+        
+        # Calculer les paramètres combinés
+        combined_parameters = self._calculate_parameters(combined_trajectory, aircraft.speed)
+        combined_parameters['has_altitude_turns'] = True
+        combined_parameters['spiral_points'] = len(spiral_trajectory)
+        combined_parameters['excess_altitude_reduced'] = excess_altitude
+        combined_parameters['turns_completed'] = len(spiral_trajectory) / (360 if len(spiral_trajectory) > 360 else len(spiral_trajectory))
+        
+        print(f"\n✅ TRAJECTOIRE AVEC TOURS AUTOMATIQUES TERMINÉE")
+        print(f"   - Tours de réduction d'altitude: {len(spiral_trajectory)} points")
+        print(f"   - Trajectoire finale vers FAF: {len(final_trajectory)} points")
+        print(f"   - Total: {len(combined_trajectory)} points")
+        print("="*70)
+        
+        return combined_trajectory, combined_parameters
+    
     def _calculate_avoidance_waypoints(self, start_2d, end_2d, cylinders, altitude):
         """
         Calcule les waypoints de contournement pour éviter les obstacles
@@ -1998,3 +2713,345 @@ class TrajectoryCalculator:
         print("="*70 + "\n")
         
         return trajectory, params
+
+    def _calculate_emergency_avoidance_trajectory(self, start_pos, faf_pos, aircraft, cylinders, original_waypoints):
+        """
+        Calcule une trajectoire d'urgence qui contourne OBLIGATOIREMENT les obstacles
+        avec des marges de sécurité très importantes.
+        
+        Args:
+            start_pos: Position de départ
+            faf_pos: Position FAF cible
+            aircraft: Instance de l'avion
+            cylinders: Liste des obstacles
+            original_waypoints: Waypoints originaux (pour référence)
+            
+        Returns:
+            np.array: Trajectoire d'urgence ou None si impossible
+        """
+        print(f"   🆘 CALCUL TRAJECTOIRE D'URGENCE - Marge sécurité MAXIMALE")
+        
+        # Utiliser des marges de sécurité extrêmes
+        emergency_margin = 8.0  # 8 km de marge minimum !
+        
+        # Créer des waypoints d'évitement très éloignés
+        emergency_waypoints = [start_pos.copy()]
+        
+        for cylinder in cylinders:
+            center = np.array([cylinder['center'][0], cylinder['center'][1], start_pos[2]])
+            radius = cylinder['radius']
+            
+            # Distance de sécurité extrême
+            safety_distance = radius + emergency_margin
+            
+            # Calculer un point de contournement très éloigné
+            # Direction perpendiculaire à la ligne start->faf
+            direction = faf_pos[:2] - start_pos[:2]
+            direction_norm = direction / np.linalg.norm(direction)
+            perpendicular = np.array([-direction_norm[1], direction_norm[0]])
+            
+            # Point milieu entre start et faf
+            midpoint = (start_pos[:2] + faf_pos[:2]) / 2
+            
+            # Décaler le point de contournement très loin de l'obstacle
+            center_to_mid = midpoint - center[:2]
+            if np.linalg.norm(center_to_mid) > 0:
+                avoid_direction = center_to_mid / np.linalg.norm(center_to_mid)
+            else:
+                avoid_direction = perpendicular
+            
+            # Point d'évitement très éloigné
+            avoidance_point_2d = center[:2] + avoid_direction * safety_distance
+            avoidance_point = np.array([
+                avoidance_point_2d[0], 
+                avoidance_point_2d[1], 
+                start_pos[2] + (faf_pos[2] - start_pos[2]) * 0.5  # Altitude intermédiaire
+            ])
+            
+            emergency_waypoints.append(avoidance_point)
+            print(f"      🔴 Waypoint d'urgence: ({avoidance_point[0]:.1f}, {avoidance_point[1]:.1f}, {avoidance_point[2]:.1f})")
+            print(f"         Distance à l'obstacle: {np.linalg.norm(avoidance_point[:2] - center[:2]):.1f} km")
+        
+        emergency_waypoints.append(faf_pos.copy())
+        
+        # Construire la trajectoire d'urgence avec des segments lissés
+        segments = []
+        
+        for i in range(len(emergency_waypoints) - 1):
+            wp_start = emergency_waypoints[i]
+            wp_end = emergency_waypoints[i + 1]
+            
+            # Distance du segment
+            segment_distance = np.linalg.norm(wp_end - wp_start)
+            n_segment_points = max(200, int(segment_distance * 150))  # Plus de points pour lisser
+            
+            # Créer un segment avec gestion précise de l'altitude
+            segment = np.zeros((n_segment_points, 3))
+            
+            # Calculer l'altitude de manière progressive et contrôlée
+            altitude_start = wp_start[2]
+            altitude_end = wp_end[2]
+            altitude_diff = altitude_end - altitude_start
+            
+            for j in range(n_segment_points):
+                t = j / (n_segment_points - 1)
+                
+                # Position horizontale (interpolation linéaire)
+                segment[j, :2] = wp_start[:2] + t * (wp_end[:2] - wp_start[:2])
+                
+                # Gestion de l'altitude avec descente progressive contrôlée
+                if altitude_diff < 0:  # Descente requise
+                    # Descente progressive avec limitation de pente
+                    max_descent_rate = 0.1  # Maximum 6° de pente (tan(6°) ≈ 0.1)
+                    actual_descent_rate = min(abs(altitude_diff) / segment_distance, max_descent_rate)
+                    
+                    # Descente contrôlée
+                    if t < 0.8:  # 80% du segment en descente douce
+                        descent_t = t / 0.8
+                        segment[j, 2] = altitude_start - descent_t * abs(altitude_diff) * actual_descent_rate / max_descent_rate
+                    else:  # 20% final pour atteindre l'altitude exacte
+                        final_t = (t - 0.8) / 0.2
+                        segment[j, 2] = altitude_start - abs(altitude_diff) * actual_descent_rate / max_descent_rate + \
+                                       final_t * (altitude_end - (altitude_start - abs(altitude_diff) * actual_descent_rate / max_descent_rate))
+                else:
+                    # Montée ou altitude constante
+                    segment[j, 2] = altitude_start + t * altitude_diff
+                
+                # Ajouter une courbure douce pour éviter les angles brusques
+                if i > 0 and i < len(emergency_waypoints) - 2 and j > 0 and j < n_segment_points - 1:
+                    curve_factor = 0.05 * np.sin(t * np.pi)  # Courbe très légère
+                    segment[j, 2] += curve_factor
+            
+            segments.append(segment)
+        
+        # Combiner tous les segments
+        emergency_trajectory = np.vstack(segments)
+        
+        # VÉRIFICATION CRITIQUE: la trajectoire doit absolument éviter tous les obstacles
+        has_collision, _, _ = self._check_trajectory_collision(emergency_trajectory, cylinders)
+        
+        if has_collision:
+            print(f"   ❌ ÉCHEC: Même la trajectoire d'urgence a des collisions!")
+            print(f"   🆘 Tentative avec marge encore plus extrême...")
+            
+            # Dernière tentative avec marge MAXIMALE
+            super_emergency_margin = 15.0  # 15 km !
+            
+            # Recalculer avec marge extrême
+            for i, cylinder in enumerate(cylinders):
+                center = np.array([cylinder['center'][0], cylinder['center'][1], start_pos[2]])
+                radius = cylinder['radius']
+                safety_distance = radius + super_emergency_margin
+                
+                # Point d'évitement TRÈS TRÈS éloigné
+                direction = faf_pos[:2] - start_pos[:2]
+                perpendicular = np.array([-direction[1], direction[0]])
+                perpendicular = perpendicular / np.linalg.norm(perpendicular)
+                
+                avoidance_point_2d = center[:2] + perpendicular * safety_distance
+                emergency_waypoints[i+1][:2] = avoidance_point_2d
+            
+            # Reconstruire la trajectoire
+            segments = []
+            for i in range(len(emergency_waypoints) - 1):
+                wp_start = emergency_waypoints[i]
+                wp_end = emergency_waypoints[i + 1]
+                segment_distance = np.linalg.norm(wp_end - wp_start)
+                n_segment_points = max(200, int(segment_distance * 150))
+                
+                segment = np.zeros((n_segment_points, 3))
+                for j in range(n_segment_points):
+                    t = j / (n_segment_points - 1)
+                    segment[j] = wp_start + t * (wp_end - wp_start)
+                segments.append(segment)
+            
+            emergency_trajectory = np.vstack(segments)
+            
+            # Vérification finale
+            has_collision, _, _ = self._check_trajectory_collision(emergency_trajectory, cylinders)
+            
+            if has_collision:
+                print(f"   ⛔ ÉCHEC avec marge de 15km - TENTATIVE WAYPOINTS MULTIPLES")
+                
+                # Dernière stratégie : waypoints multiples avec contournement par l'extérieur
+                multi_waypoint_trajectory = self._calculate_multi_waypoint_avoidance(
+                    start_pos, faf_pos, aircraft, cylinders
+                )
+                
+                if multi_waypoint_trajectory is not None:
+                    print(f"   ✅ CONTOURNEMENT MULTI-WAYPOINTS RÉUSSI")
+                    return multi_waypoint_trajectory
+                else:
+                    print(f"   ⛔ ÉCHEC TOTAL: Impossible de calculer une trajectoire sûre")
+                    return None
+        
+        print(f"   ✅ TRAJECTOIRE D'URGENCE VALIDÉE: {len(emergency_trajectory)} points")
+        print(f"   🛡️  AUCUNE COLLISION - Sécurité maximale assurée")
+        
+        return emergency_trajectory
+
+    def _calculate_multi_waypoint_avoidance(self, start_pos, faf_pos, aircraft, cylinders):
+        """
+        Calcule une trajectoire avec contournement par waypoints multiples
+        Cette méthode utilise une approche de contournement par l'extérieur de TOUS les obstacles
+        
+        Args:
+            start_pos: Position de départ
+            faf_pos: Position FAF cible
+            aircraft: Instance de l'avion
+            cylinders: Liste des obstacles
+            
+        Returns:
+            np.array: Trajectoire de contournement ou None si impossible
+        """
+        print(f"   🔄 CALCUL MULTI-WAYPOINTS - Contournement externe de TOUS les obstacles")
+        
+        # Marge de sécurité MASSIVE pour garantir l'évitement
+        ultra_safety_margin = 20.0  # 20 km de marge !
+        
+        # Trouver l'enveloppe englobante de tous les obstacles
+        all_obstacle_centers = []
+        max_radius = 0
+        
+        for cylinder in cylinders:
+            center = np.array([cylinder['center'][0], cylinder['center'][1]])
+            radius = cylinder['radius'] + ultra_safety_margin
+            all_obstacle_centers.append(center)
+            max_radius = max(max_radius, radius)
+        
+        if not all_obstacle_centers:
+            return None
+        
+        # Calculer le centre moyen des obstacles
+        mean_center = np.mean(all_obstacle_centers, axis=0)
+        
+        # Calculer la distance maximale du centre moyen aux obstacles
+        max_distance_from_center = 0
+        for center in all_obstacle_centers:
+            dist = np.linalg.norm(center - mean_center)
+            max_distance_from_center = max(max_distance_from_center, dist + max_radius)
+        
+        # Rayon de contournement = distance max + marge supplémentaire
+        bypass_radius = max_distance_from_center + ultra_safety_margin
+        
+        print(f"      📐 Centre des obstacles: ({mean_center[0]:.1f}, {mean_center[1]:.1f})")
+        print(f"      🔵 Rayon de contournement: {bypass_radius:.1f} km")
+        
+        # Calculer des waypoints qui contournent par l'extérieur
+        waypoints = [start_pos.copy()]
+        
+        # Direction start -> faf
+        direction_to_faf = faf_pos[:2] - start_pos[:2]
+        direction_to_faf_norm = direction_to_faf / np.linalg.norm(direction_to_faf)
+        
+        # Perpendiculaire à cette direction
+        perp_direction = np.array([-direction_to_faf_norm[1], direction_to_faf_norm[0]])
+        
+        # Vérifier si on doit contourner par la droite ou par la gauche
+        start_to_center = mean_center - start_pos[:2]
+        # Produit scalaire pour déterminer le côté
+        side = np.dot(start_to_center, perp_direction)
+        
+        if side > 0:
+            # Contourner par la gauche
+            perp_direction = -perp_direction
+            side_name = "gauche"
+        else:
+            side_name = "droite"
+        
+        print(f"      ↔️ Contournement par la {side_name}")
+        
+        # Créer 3 waypoints de contournement
+        for i in range(1, 4):
+            progress = i / 4.0  # 25%, 50%, 75% du trajet
+            
+            # Point sur la ligne directe start->faf
+            direct_point = start_pos[:2] + progress * direction_to_faf
+            
+            # Décaler ce point perpendiculairement pour éviter les obstacles
+            offset = perp_direction * bypass_radius
+            waypoint_2d = direct_point + offset
+            
+            # Altitude interpolée
+            altitude = start_pos[2] + progress * (faf_pos[2] - start_pos[2])
+            waypoint_3d = np.array([waypoint_2d[0], waypoint_2d[1], altitude])
+            
+            waypoints.append(waypoint_3d)
+            print(f"         Waypoint {i}: ({waypoint_3d[0]:.1f}, {waypoint_3d[1]:.1f}, {waypoint_3d[2]:.1f})")
+        
+        waypoints.append(faf_pos.copy())
+        
+        # Construire la trajectoire par segments
+        segments = []
+        
+        for i in range(len(waypoints) - 1):
+            wp_start = waypoints[i]
+            wp_end = waypoints[i + 1]
+            
+            # Distance du segment
+            segment_distance = np.linalg.norm(wp_end - wp_start)
+            n_segment_points = max(300, int(segment_distance * 200))  # Très haute densité
+            
+            # Créer un segment lissé
+            segment = np.zeros((n_segment_points, 3))
+            for j in range(n_segment_points):
+                t = j / (n_segment_points - 1)
+                segment[j] = wp_start + t * (wp_end - wp_start)
+            
+            segments.append(segment)
+        
+        # Combiner tous les segments
+        multi_trajectory = np.vstack(segments)
+        
+        # VÉRIFICATION CRITIQUE: cette trajectoire DOIT éviter tous les obstacles
+        has_collision, colliding_indices, first_collision_idx = self._check_trajectory_collision(multi_trajectory, cylinders)
+        
+        if has_collision:
+            print(f"   ❌ ÉCHEC: Collision persistante même avec contournement externe!")
+            print(f"   📍 Collision au point {first_collision_idx}: {multi_trajectory[first_collision_idx]}")
+            
+            # Augmenter encore plus la marge et essayer une dernière fois
+            print(f"   🆘 DERNIÈRE TENTATIVE: Marge de 40 km")
+            
+            super_ultra_margin = 40.0
+            super_bypass_radius = max_distance_from_center + super_ultra_margin
+            
+            # Recalculer avec marge extrême
+            waypoints_final = [start_pos.copy()]
+            for i in range(1, 4):
+                progress = i / 4.0
+                direct_point = start_pos[:2] + progress * direction_to_faf
+                offset = perp_direction * super_bypass_radius
+                waypoint_2d = direct_point + offset
+                altitude = start_pos[2] + progress * (faf_pos[2] - start_pos[2])
+                waypoint_3d = np.array([waypoint_2d[0], waypoint_2d[1], altitude])
+                waypoints_final.append(waypoint_3d)
+            waypoints_final.append(faf_pos.copy())
+            
+            # Reconstruire avec marge maximale
+            segments_final = []
+            for i in range(len(waypoints_final) - 1):
+                wp_start = waypoints_final[i]
+                wp_end = waypoints_final[i + 1]
+                segment_distance = np.linalg.norm(wp_end - wp_start)
+                n_segment_points = max(300, int(segment_distance * 200))
+                
+                segment = np.zeros((n_segment_points, 3))
+                for j in range(n_segment_points):
+                    t = j / (n_segment_points - 1)
+                    segment[j] = wp_start + t * (wp_end - wp_start)
+                segments_final.append(segment)
+            
+            multi_trajectory = np.vstack(segments_final)
+            
+            # Vérification finale
+            has_collision, _, _ = self._check_trajectory_collision(multi_trajectory, cylinders)
+            
+            if has_collision:
+                print(f"   ⛔ IMPOSSIBLE: Même avec 40km de marge, collision détectée")
+                return None
+        
+        print(f"   ✅ TRAJECTOIRE MULTI-WAYPOINTS VALIDÉE: {len(multi_trajectory)} points")
+        print(f"   🛡️  Contournement externe réussi - AUCUNE COLLISION")
+        
+        return multi_trajectory

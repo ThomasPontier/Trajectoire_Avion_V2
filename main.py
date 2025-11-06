@@ -39,6 +39,9 @@ DEFAULT_CONFIG = {
         "speed": 250.0,
         "heading": 180.0,
     },
+    "simulation": {
+        "num_trajectories": 10  # Nombre de trajectoires pour les simulations multiples
+    },
 }
 
 
@@ -74,6 +77,9 @@ class FlightSimulatorGUI:
         
         # Initialiser l'affichage des spécifications
         self._on_aircraft_type_changed()
+        
+        # Initialiser le texte du bouton de simulations multiples
+        self._update_button_text()
         
         # Créer l'environnement initial
         self._update_environment()
@@ -614,6 +620,9 @@ class FlightSimulatorGUI:
         # Type d'avion
         ttk.Label(control_frame, text="Type d'avion:", font=('Arial', 9, 'bold')).grid(row=row, column=0, sticky=tk.W, pady=5)
         self.aircraft_type_var = tk.StringVar(value="commercial")
+        
+        # Variable pour le nombre de trajectoires (ajoutée ici avec les autres variables de contrôle)
+        self.num_trajectories_var = tk.IntVar(value=DEFAULT_CONFIG["simulation"]["num_trajectories"])
         aircraft_combo = ttk.Combobox(control_frame, textvariable=self.aircraft_type_var, 
                                      values=AircraftType.get_all_types(), 
                                      state='readonly', width=13)
@@ -683,6 +692,16 @@ class FlightSimulatorGUI:
                  font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
         row += 1
         
+        # Option tours automatiques pour pente excessive
+        self.use_automatic_turns_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(control_frame, text="Tours automatiques (éviter pente excessive)", 
+                       variable=self.use_automatic_turns_var).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        row += 1
+        
+        ttk.Label(control_frame, text="Active des tours en spirale si la pente nécessaire\ndépasse l'angle maximum autorisé", 
+                 font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
+        row += 1
+        
         # Séparateur
         ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
         row += 1
@@ -703,13 +722,45 @@ class FlightSimulatorGUI:
         ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
         row += 1
         
+        # Configuration des simulations multiples
+        ttk.Label(control_frame, text="Simulations Multiples:", font=('Arial', 9, 'bold')).grid(row=row, column=0, sticky=tk.W, pady=5)
+        row += 1
+        
+        ttk.Label(control_frame, text="Nombre de trajectoires:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        num_traj_frame = ttk.Frame(control_frame)
+        num_traj_frame.grid(row=row, column=1, pady=5)
+        
+        # Spinbox pour le nombre de trajectoires (1 à 50)
+        self.num_traj_spinbox = tk.Spinbox(
+            num_traj_frame, 
+            from_=1, 
+            to=50, 
+            textvariable=self.num_trajectories_var, 
+            width=8,
+            command=self._update_button_text
+        )
+        self.num_traj_spinbox.pack(side=tk.LEFT)
+        
+        # Bind pour mettre à jour le texte du bouton quand on tape manuellement
+        self.num_traj_spinbox.bind('<KeyRelease>', lambda e: self._update_button_text())
+        self.num_traj_spinbox.bind('<FocusOut>', lambda e: self._update_button_text())
+        
+        row += 1
+        
+        # Séparateur
+        ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
+        row += 1
+        
         # Boutons
         button_frame = ttk.Frame(control_frame)
         button_frame.grid(row=row, column=0, columnspan=2, pady=10)
         
         ttk.Button(button_frame, text="Valider Position", command=self._validate_position).pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Lancer Simulation", command=self._run_simulation).pack(fill=tk.X, pady=5)
-        ttk.Button(button_frame, text="10 Simulations Aléatoires", command=self._run_multiple_random_simulations).pack(fill=tk.X, pady=5)
+        
+        # Bouton pour simulations multiples (texte dynamique)
+        self.multiple_sim_button = ttk.Button(button_frame, text="10 Simulations Aléatoires", command=self._run_multiple_random_simulations)
+        self.multiple_sim_button.pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Effacer Trajectoires Multiples", command=self._clear_multiple_trajectories).pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Réinitialiser", command=self._reset).pack(fill=tk.X, pady=5)
         
@@ -863,6 +914,13 @@ class FlightSimulatorGUI:
                     },
                     'speed': self.speed_var.get(),
                     'heading': self.heading_var.get()
+                },
+                'options': {
+                    'use_realistic_turns': self.use_realistic_turns_var.get(),
+                    'use_automatic_turns': self.use_automatic_turns_var.get()
+                },
+                'simulation': {
+                    'num_trajectories': self.num_trajectories_var.get()
                 }
             }
             
@@ -978,6 +1036,18 @@ class FlightSimulatorGUI:
             self.speed_var.set(aircraft.get('speed', DEFAULT_CONFIG['aircraft']['speed']))
             self.heading_var.set(aircraft.get('heading', DEFAULT_CONFIG['aircraft']['heading']))
             
+            # Charger les options de trajectoire
+            options = config.get('options', {})
+            if hasattr(self, 'use_realistic_turns_var'):
+                self.use_realistic_turns_var.set(options.get('use_realistic_turns', True))
+            if hasattr(self, 'use_automatic_turns_var'):
+                self.use_automatic_turns_var.set(options.get('use_automatic_turns', False))
+            
+            # Charger les paramètres de simulation
+            simulation = config.get('simulation', {})
+            if hasattr(self, 'num_trajectories_var'):
+                self.num_trajectories_var.set(simulation.get('num_trajectories', DEFAULT_CONFIG['simulation']['num_trajectories']))
+            
         except Exception as e:
             print(f"Erreur lors du chargement de la configuration: {e}")
             # Continuer avec les valeurs par défaut
@@ -1057,6 +1127,19 @@ class FlightSimulatorGUI:
             
             self.speed_var.set(aircraft.get('speed', 250))
             self.heading_var.set(aircraft.get('heading', 90))
+            
+            # Charger les options de trajectoire
+            options = config.get('options', {})
+            if hasattr(self, 'use_realistic_turns_var'):
+                self.use_realistic_turns_var.set(options.get('use_realistic_turns', True))
+            if hasattr(self, 'use_automatic_turns_var'):
+                self.use_automatic_turns_var.set(options.get('use_automatic_turns', False))
+            
+            # Charger les paramètres de simulation
+            simulation = config.get('simulation', {})
+            if hasattr(self, 'num_trajectories_var'):
+                self.num_trajectories_var.set(simulation.get('num_trajectories', 10))
+                self._update_button_text()  # Mettre à jour le texte du bouton
             
             # Appliquer la configuration de l'environnement
             self._apply_environment_config()
@@ -1665,61 +1748,14 @@ class FlightSimulatorGUI:
         
         # Dessiner la trajectoire si elle existe
         if self.trajectory is not None:
-            # Vue XY (dessus)
-            if self.trajectory_params and 'runway_alignment' in self.trajectory_params:
-                # Nouvelle trajectoire avec alignement piste (3 phases)
-                initial_end = self.trajectory_params.get('initial_segment_end', 0)
-                turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
-                
-                # Phase 1: Vol initial (bleu marine)
-                if initial_end > 0:
-                    self.ax_xy.plot(self.trajectory[:initial_end, 0], 
-                                   self.trajectory[:initial_end, 1], 
-                                   'navy', linewidth=2, label='Vol initial', alpha=0.9)
-                
-                # Phase 2: Virage progressif (magenta)
-                if turn_end > initial_end:
-                    self.ax_xy.plot(self.trajectory[initial_end:turn_end, 0], 
-                                   self.trajectory[initial_end:turn_end, 1], 
-                                   'magenta', linewidth=2, label='Alignement', alpha=0.9)
-                
-                # Phase 3: Sur axe piste (vert)
-                if turn_end < len(self.trajectory):
-                    self.ax_xy.plot(self.trajectory[turn_end:, 0], 
-                                   self.trajectory[turn_end:, 1], 
-                                   'g-', linewidth=2, label='Sur piste', alpha=0.9)
+            # Vérifier s'il y a des tours automatiques (spirales)
+            has_spirals = self.trajectory_params and self.trajectory_params.get('has_altitude_turns', False)
             
-            if self.trajectory_params and 'turn_radius' in self.trajectory_params:
-                # Vérifier s'il y a un segment initial (2 phases: vol initial → virage jusqu'au FAF)
-                if 'initial_segment_end_index' in self.trajectory_params:
-                    initial_end = self.trajectory_params['initial_segment_end_index']
-                    turn_end = self.trajectory_params['turn_segment_end_index']
-                    
-                    # Phase 1: Vol initial (bleu marine)
-                    if initial_end > 0:
-                        self.ax_xy.plot(self.trajectory[:initial_end, 0], 
-                                       self.trajectory[:initial_end, 1], 
-                                       'navy', linewidth=2, label='Vol initial', alpha=0.9)
-                    
-                    # Phase 2: Virage progressif jusqu'au FAF (divisé en 2 couleurs)
-                    if turn_end > initial_end:
-                        # 60% virage en magenta, 40% alignement en vert
-                        split_idx = initial_end + int((turn_end - initial_end) * 0.6)
-                        
-                        self.ax_xy.plot(self.trajectory[initial_end:split_idx, 0], 
-                                       self.trajectory[initial_end:split_idx, 1], 
-                                       'magenta', linewidth=2, label='Virage progressif', alpha=0.9)
-                        
-                        self.ax_xy.plot(self.trajectory[split_idx:turn_end, 0], 
-                                       self.trajectory[split_idx:turn_end, 1], 
-                                       'limegreen', linewidth=2, label='Alignement→FAF', alpha=0.9)
-                else:
-                    # Trajectoire simple (pas de phases)
-                    self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
-                                   'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+            if has_spirals:
+                self._draw_spiral_trajectory_2d()
             else:
-                self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
-                               'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+                self._draw_normal_trajectory_2d()
+            pass  # Le traitement est maintenant géré par les nouvelles fonctions
             
             # Vue XZ (face)
             self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 
@@ -1773,6 +1809,165 @@ class FlightSimulatorGUI:
         self.canvas_2d.draw()
         print(f"✅ Vues 2D rafraîchies!\n")
     
+    def _draw_spiral_trajectory_2d(self):
+        """Dessine une trajectoire avec spirales de manière visible dans les vues 2D"""
+        spiral_points = self.trajectory_params.get('spiral_points', 0)
+        
+        if spiral_points > 0:
+            # Partie 1: Spirale (tours automatiques) avec visualisation améliorée
+            spiral_trajectory = self.trajectory[:spiral_points]
+            normal_trajectory = self.trajectory[spiral_points:]
+            
+            # Dessiner la spirale avec des couleurs dégradées pour chaque tour
+            self._draw_enhanced_spiral_xy(spiral_trajectory)
+            
+            # Dessiner la trajectoire normale après la spirale
+            if len(normal_trajectory) > 0:
+                self.ax_xy.plot(normal_trajectory[:, 0], normal_trajectory[:, 1], 
+                               'limegreen', linewidth=3, label='→ Vers FAF', alpha=0.9, zorder=3)
+        else:
+            # Pas de spirale, dessiner normalement
+            self._draw_normal_trajectory_2d()
+        
+        # Dessiner dans les autres vues (XZ et YZ) avec couleurs normales
+        self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 
+                       'purple', linewidth=2, label='Trajectoire', alpha=0.8)
+        self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 
+                       'purple', linewidth=2, label='Trajectoire', alpha=0.8)
+    
+    def _draw_enhanced_spiral_xy(self, spiral_trajectory):
+        """Dessine une spirale avec visualisation améliorée dans la vue XY"""
+        if len(spiral_trajectory) < 100:
+            # Spirale trop courte, dessiner normalement
+            self.ax_xy.plot(spiral_trajectory[:, 0], spiral_trajectory[:, 1], 
+                           'orange', linewidth=2, label='Tours', alpha=0.8)
+            return
+        
+        # Calculer le nombre de tours approximatif
+        n_points = len(spiral_trajectory)
+        estimated_turns = self.trajectory_params.get('turns_completed', 1)
+        points_per_turn = max(100, n_points // max(1, int(estimated_turns)))
+        
+        # Couleurs pour les tours successifs
+        turn_colors = ['red', 'darkorange', 'gold', 'orange', 'yellow', 'coral']
+        
+        # Dessiner chaque tour avec une couleur différente et épaisseur variable
+        turn_number = 0
+        for i in range(0, n_points, points_per_turn):
+            end_idx = min(i + points_per_turn, n_points)
+            if end_idx - i < 10:  # Segment trop court
+                continue
+                
+            segment = spiral_trajectory[i:end_idx]
+            color = turn_colors[turn_number % len(turn_colors)]
+            
+            # Épaisseur décroissante pour montrer la progression
+            linewidth = 4 - (turn_number * 0.5)
+            linewidth = max(1.5, linewidth)
+            
+            # Transparence croissante pour les tours plus anciens
+            alpha = 1.0 - (turn_number * 0.15)
+            alpha = max(0.4, alpha)
+            
+            label = f'Tour {turn_number + 1}' if turn_number < 3 else None
+            
+            self.ax_xy.plot(segment[:, 0], segment[:, 1], 
+                           color=color, linewidth=linewidth, label=label, 
+                           alpha=alpha, zorder=4 + turn_number)
+            
+            # Ajouter des flèches directionnelles sur chaque tour
+            if len(segment) > 20:
+                mid_idx = len(segment) // 2
+                if mid_idx + 5 < len(segment):
+                    # Direction de la flèche
+                    dx = segment[mid_idx + 5, 0] - segment[mid_idx, 0]
+                    dy = segment[mid_idx + 5, 1] - segment[mid_idx, 1]
+                    
+                    # Normaliser et ajuster la taille
+                    length = np.sqrt(dx*dx + dy*dy)
+                    if length > 0:
+                        arrow_scale = 0.3
+                        dx = (dx / length) * arrow_scale
+                        dy = (dy / length) * arrow_scale
+                        
+                        self.ax_xy.arrow(segment[mid_idx, 0], segment[mid_idx, 1], 
+                                        dx, dy, head_width=0.2, head_length=0.15, 
+                                        fc=color, ec=color, alpha=alpha*1.2, 
+                                        linewidth=1, zorder=6)
+            
+            turn_number += 1
+        
+        # Marquer le centre de la spirale
+        if len(spiral_trajectory) > 10:
+            center_x = np.mean(spiral_trajectory[:, 0])
+            center_y = np.mean(spiral_trajectory[:, 1])
+            self.ax_xy.scatter(center_x, center_y, c='darkred', marker='x', s=100, 
+                              label='Centre spirale', zorder=7, linewidth=3)
+    
+    def _draw_normal_trajectory_2d(self):
+        """Dessine une trajectoire normale (sans spirales) dans les vues 2D"""
+        # Vue XY (dessus)
+        if self.trajectory_params and 'runway_alignment' in self.trajectory_params:
+            # Nouvelle trajectoire avec alignement piste (3 phases)
+            initial_end = self.trajectory_params.get('initial_segment_end', 0)
+            turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
+            
+            # Phase 1: Vol initial (bleu marine)
+            if initial_end > 0:
+                self.ax_xy.plot(self.trajectory[:initial_end, 0], 
+                               self.trajectory[:initial_end, 1], 
+                               'navy', linewidth=2, label='Vol initial', alpha=0.9)
+            
+            # Phase 2: Virage progressif (magenta)
+            if turn_end > initial_end:
+                self.ax_xy.plot(self.trajectory[initial_end:turn_end, 0], 
+                               self.trajectory[initial_end:turn_end, 1], 
+                               'magenta', linewidth=2, label='Alignement', alpha=0.9)
+            
+            # Phase 3: Sur axe piste (vert)
+            if turn_end < len(self.trajectory):
+                self.ax_xy.plot(self.trajectory[turn_end:, 0], 
+                               self.trajectory[turn_end:, 1], 
+                               'g-', linewidth=2, label='Sur piste', alpha=0.9)
+        
+        elif self.trajectory_params and 'turn_radius' in self.trajectory_params:
+            # Vérifier s'il y a un segment initial (2 phases: vol initial → virage jusqu'au FAF)
+            if 'initial_segment_end_index' in self.trajectory_params:
+                initial_end = self.trajectory_params['initial_segment_end_index']
+                turn_end = self.trajectory_params['turn_segment_end_index']
+                
+                # Phase 1: Vol initial (bleu marine)
+                if initial_end > 0:
+                    self.ax_xy.plot(self.trajectory[:initial_end, 0], 
+                                   self.trajectory[:initial_end, 1], 
+                                   'navy', linewidth=2, label='Vol initial', alpha=0.9)
+                
+                # Phase 2: Virage progressif jusqu'au FAF (divisé en 2 couleurs)
+                if turn_end > initial_end:
+                    # 60% virage en magenta, 40% alignement en vert
+                    split_idx = initial_end + int((turn_end - initial_end) * 0.6)
+                    
+                    self.ax_xy.plot(self.trajectory[initial_end:split_idx, 0], 
+                                   self.trajectory[initial_end:split_idx, 1], 
+                                   'magenta', linewidth=2, label='Virage progressif', alpha=0.9)
+                    
+                    self.ax_xy.plot(self.trajectory[split_idx:turn_end, 0], 
+                                   self.trajectory[split_idx:turn_end, 1], 
+                                   'limegreen', linewidth=2, label='Alignement→FAF', alpha=0.9)
+            else:
+                # Trajectoire simple (pas de phases)
+                self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
+                               'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+        else:
+            self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
+                           'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+        
+        # Dessiner dans les autres vues
+        self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 
+                       'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+        self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 
+                       'g-', linewidth=2, label='Trajectoire', alpha=0.9)
+
     def _draw_cylinder_on_ax(self, ax, x, y, radius, height):
         """Dessine un cylindre (obstacle) sur un axe 3D donné"""
         # Créer le cylindre
@@ -1980,6 +2175,26 @@ class FlightSimulatorGUI:
         # Mettre à jour la vitesse suggérée
         self.speed_var.set(specs['typical_speed'])
     
+    def _update_button_text(self):
+        """Met à jour le texte du bouton de simulations multiples"""
+        try:
+            num_traj = self.num_trajectories_var.get()
+            if num_traj <= 0:
+                num_traj = 1
+                self.num_trajectories_var.set(1)
+            elif num_traj > 50:
+                num_traj = 50
+                self.num_trajectories_var.set(50)
+            
+            # Mettre à jour le texte du bouton
+            if hasattr(self, 'multiple_sim_button'):
+                self.multiple_sim_button.config(text=f"{num_traj} Simulations Aléatoires")
+        except (ValueError, tk.TclError):
+            # En cas d'erreur (valeur non numérique), remettre la valeur par défaut
+            self.num_trajectories_var.set(10)
+            if hasattr(self, 'multiple_sim_button'):
+                self.multiple_sim_button.config(text="10 Simulations Aléatoires")
+    
     def _validate_position(self):
         """Valide et positionne l'avion"""
         
@@ -2045,7 +2260,35 @@ class FlightSimulatorGUI:
             if len(self.cylinders) > 0:
                 print(f"\n🚧 Détection de {len(self.cylinders)} obstacle(s) - activation évitement")
             
-            if self.use_realistic_turns_var.get():
+            # Vérifier si tours automatiques pour pente excessive activés
+            if self.use_automatic_turns_var.get():
+                # Trajectoire avec tours automatiques si pente trop forte
+                print("\n🔧 Calcul: Trajectoire avec TOURS AUTOMATIQUES pour pente...")
+                print(f"🛩️  Position avion: ({self.aircraft.position[0]:.1f}, {self.aircraft.position[1]:.1f}, {self.aircraft.position[2]:.1f}) km")
+                print(f"🎯 Position FAF: ({self.environment.faf_position[0]:.1f}, {self.environment.faf_position[1]:.1f}, {self.environment.faf_position[2]:.1f}) km")
+                
+                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_automatic_turns(
+                    self.aircraft, self.cylinders
+                )
+                
+                # Vérifier si la trajectoire a pu être calculée sans collision
+                if self.trajectory is None:
+                    messagebox.showerror("Erreur de Trajectoire", 
+                        "❌ IMPOSSIBLE de calculer une trajectoire sûre!\n\n"
+                        "🚫 Aucune trajectoire ne peut éviter les obstacles depuis cette position.\n"
+                        "💡 Suggestions:\n"
+                        "   • Déplacer l'avion plus loin des obstacles\n"
+                        "   • Réduire la taille des obstacles\n"
+                        "   • Modifier la position FAF ou aéroport")
+                    return
+                
+                # Debug: vérifier les résultats
+                print(f"📦 Résultat - Points trajectoire: {len(self.trajectory)}")
+                print(f"📦 Tours automatiques utilisés: {self.trajectory_params.get('has_altitude_turns', False)}")
+                if self.trajectory_params.get('has_altitude_turns'):
+                    print(f"   🌀 Points de spirale: {self.trajectory_params.get('spiral_points', 0)}")
+                    print(f"   📉 Altitude réduite: {self.trajectory_params.get('excess_altitude_reduced', 0):.2f} km")
+            elif self.use_realistic_turns_var.get():
                 # Trajectoire avec virages réalistes (avec évitement d'obstacles)
                 print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
                 self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(
@@ -2159,10 +2402,23 @@ class FlightSimulatorGUI:
         return None
     
     def _run_multiple_random_simulations(self):
-        """Lance 10 simulations aléatoires avec positions différentes"""
+        """Lance X simulations aléatoires avec positions différentes (X configurable par l'utilisateur)"""
         
         if self.environment is None:
             messagebox.showwarning("Attention", "Veuillez d'abord configurer l'environnement!")
+            return
+        
+        # Récupérer le nombre de trajectoires configuré
+        try:
+            num_trajectories = self.num_trajectories_var.get()
+            if num_trajectories <= 0:
+                messagebox.showwarning("Attention", "Le nombre de trajectoires doit être supérieur à 0!")
+                return
+            if num_trajectories > 50:
+                messagebox.showwarning("Attention", "Le nombre maximum de trajectoires est limité à 50!")
+                return
+        except (ValueError, tk.TclError):
+            messagebox.showerror("Erreur", "Veuillez entrer un nombre valide de trajectoires!")
             return
         
         # Réinitialiser la trajectoire simple pour basculer vers mode multiple
@@ -2189,8 +2445,8 @@ class FlightSimulatorGUI:
         failed_positions = 0
         
         try:
-            for i in range(10):
-                print(f"\n🎲 === SIMULATION ALÉATOIRE {i+1}/10 ===")
+            for i in range(num_trajectories):
+                print(f"\n🎲 === SIMULATION ALÉATOIRE {i+1}/{num_trajectories} ===")
                 
                 # Générer position aléatoire valide
                 random_pos = self._generate_random_position()
@@ -2223,7 +2479,11 @@ class FlightSimulatorGUI:
                 calculator = TrajectoryCalculator(self.environment)
                 
                 try:
-                    if hasattr(self, 'use_realistic_turns_var') and self.use_realistic_turns_var.get():
+                    if hasattr(self, 'use_automatic_turns_var') and self.use_automatic_turns_var.get():
+                        trajectory, trajectory_params = calculator.calculate_trajectory_with_automatic_turns(
+                            temp_aircraft, self.cylinders
+                        )
+                    elif hasattr(self, 'use_realistic_turns_var') and self.use_realistic_turns_var.get():
                         trajectory, trajectory_params = calculator.calculate_trajectory_with_turn(
                             temp_aircraft, self.cylinders
                         )
@@ -2232,7 +2492,13 @@ class FlightSimulatorGUI:
                             temp_aircraft, self.cylinders
                         )
                     
-                    # Stocker la trajectoire
+                    # Vérifier si la trajectoire a pu être calculée sans collision
+                    if trajectory is None:
+                        print(f"❌ Erreur simulation {i+1}: Impossible d'éviter les obstacles depuis cette position")
+                        failed_positions += 1
+                        continue
+                    
+                    # Stocker la trajectoire sûre
                     self.multiple_trajectories.append(trajectory)
                     self.multiple_trajectories_params.append(trajectory_params)
                     successful_simulations += 1
@@ -2259,7 +2525,7 @@ class FlightSimulatorGUI:
             # Message de résultats
             if successful_simulations > 0:
                 total_trajectories = len(self.multiple_trajectories)
-                info_msg = f"✅ {successful_simulations}/10 nouvelles simulations réussies!\n"
+                info_msg = f"✅ {successful_simulations}/{num_trajectories} nouvelles simulations réussies!\n"
                 info_msg += f"📊 Total des trajectoires affichées: {total_trajectories}\n\n"
                 if failed_positions > 0:
                     info_msg += f"⚠️ {failed_positions} positions invalides générées\n\n"

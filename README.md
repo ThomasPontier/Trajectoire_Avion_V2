@@ -38,6 +38,8 @@ Ce simulateur permet de calculer et visualiser en 3D la trajectoire optimale d'u
 - ✅ **Interface graphique intuitive** avec onglets organisés
 - ✅ **Visualisation 3D interactive** avec barre d'outils de navigation
 - ✅ **Calcul physique réaliste** avec contraintes aéronautiques
+- ✅ **Simulations multiples configurables** : 1 à 50 trajectoires paramétrables 🆕
+- ✅ **Système de sécurité avancé** : refus absolu des trajectoires dangereuses 🆕
 - ✅ **Sauvegarde automatique** de la configuration
 - ✅ **Application standalone** : aucune installation Python nécessaire pour l'exécutable
 
@@ -164,6 +166,15 @@ Trajectoire_Avion_V2/
 - **Cap initial** (0°=Nord, 90°=Est, 180°=Sud, 270°=Ouest)
 - Option **"Virages réalistes"** pour mode interception d'axe
 
+#### **Simulations Multiples** 🆕
+- **Nombre de trajectoires configurables** : 1 à 50 simulations
+- 🎲 **Positions aléatoires** : variations autour de la position de base
+- 🧭 **Caps variables** : déviation aléatoire ±30° du cap initial
+- ⚡ **Vitesses fluctuantes** : variation ±10% de la vitesse de référence
+- 🛡️ **Analyse de sécurité automatique** : refus des trajectoires dangereuses
+- 📊 **Rapport de sécurité** : statistiques des trajectoires valides/refusées
+- 🎯 **Bouton dynamique** : "X Simulations Aléatoires" selon configuration
+
 ### 📦 Onglet 2 : Vue 3D
 
 Visualisation 3D interactive avec :
@@ -213,8 +224,25 @@ Toute la configuration est sauvegardée dans `config.json` :
 2. **Configurez l'environnement** (onglet Configuration → Environnement)
 3. **Ajoutez des obstacles** (optionnel, onglet Configuration → Obstacles)
 4. **Configurez l'avion** (onglet Configuration → Avion)
-5. **Cliquez sur "Calculer la Trajectoire"**
-6. **Visualisez** les résultats dans les onglets Vue 3D, Vues 2D et Paramètres
+5. **Choisissez le nombre de trajectoires** 🆕 (1-50 simulations)
+6. **Cliquez sur "X Simulations Aléatoires"** 🆕 (ou "Calculer la Trajectoire" pour une seule)
+7. **Visualisez** les résultats dans les onglets Vue 3D, Vues 2D et Paramètres
+
+### Options de Simulation 🆕
+
+#### Simulation Unique
+- Cliquez sur **"Calculer la Trajectoire"**
+- Utilise exactement la configuration définie
+- Idéal pour tester des paramètres précis
+
+#### Simulations Multiples
+- Configurez le **nombre de trajectoires** (1-50)
+- Cliquez sur **"X Simulations Aléatoires"**
+- Génère des variations aléatoires :
+  - 📍 **Position** : ±5 km autour du point défini
+  - 🧭 **Cap** : ±30° autour du cap défini
+  - ⚡ **Vitesse** : ±10% autour de la vitesse définie
+- ✅ **Analyse de sécurité automatique** : refus des trajectoires dangereuses
 
 ### Configuration Exemple
 
@@ -362,11 +390,48 @@ d = 2000 m / tan(10°)
 d ≈ 11 340 m = 11.3 km
 ```
 
-### Évitement d'Obstacles
+### Évitement d'Obstacles et Système de Sécurité
 
-- Détection automatique des collisions avec les cylindres
-- Algorithme d'évitement latéral si nécessaire
-- Préservation de l'altitude pour éviter les obstacles
+#### Système de Sécurité Multi-Niveaux 🆕
+
+Le simulateur implémente un **système de sécurité à 5 niveaux** pour garantir des trajectoires sûres :
+
+**Niveau 1 - Marge Standard (5 km)**
+- Première tentative avec marge de sécurité normale
+- Évitement préventif des obstacles
+
+**Niveau 2 - Marge Réduite (3 km)**
+- Réduction de la marge de sécurité
+- Trajectoire plus directe mais sécurisée
+
+**Niveau 3 - Marge Minimale (1 km)**
+- Marge de sécurité critique
+- Trajectoire de derniers recours
+
+**Niveau 4 - Trajectoire d'Urgence (0.5 km)**
+- Calcul de trajectoire d'urgence
+- Marge de sécurité absolue minimale
+
+**Niveau 5 - Analyse de Sécurité Critique**
+- Extension de la marge jusqu'à 40 km pour analyse
+- **Refus absolu** si collision inévitable
+- Protection contre les trajectoires dangereuses
+
+#### Fonctionnalités de Sécurité
+
+- ✅ **Détection automatique** des collisions avec les cylindres
+- ✅ **Algorithme d'évitement latéral** progressif avec escalade
+- ✅ **Préservation de l'altitude** pour éviter les obstacles
+- ✅ **Refus catégorique** des trajectoires à risque de collision
+- ✅ **Rapport de sécurité détaillé** pour chaque simulation
+- ✅ **Analyse en temps réel** de la viabilité des trajectoires
+
+#### Messages de Sécurité
+
+Le système affiche des messages explicites :
+- 🟢 **"Trajectoire sécurisée"** : aucun obstacle détecté
+- 🟡 **"Évitement réussi"** : obstacles contournés avec succès
+- 🔴 **"REFUS ABSOLU"** : collision inévitable, trajectoire rejetée
 
 ---
 
@@ -457,6 +522,9 @@ Pour distribuer l'application :
         },
         "speed": 250.0,
         "heading": 180.0
+    },
+    "simulation": {
+        "num_trajectories": 10
     }
 }
 ```
@@ -478,6 +546,12 @@ Pour distribuer l'application :
 - `position.x`, `position.y`, `position.z` : position initiale
 - `speed` : vitesse de croisière (km/h)
 - `heading` : cap initial (0-360°, 0=Nord)
+
+#### Simulation 🆕
+- `num_trajectories` : nombre de trajectoires à calculer (1-50)
+  - Valeur par défaut : 10
+  - Influence les simulations multiples aléatoires
+  - Sauvegardé automatiquement dans la configuration
 
 ---
 
@@ -558,6 +632,15 @@ Configurations de test incluses dans l'interface :
 
 ## 📝 Historique des Versions
 
+### Version 1.4 (2025-01-07) 🆕
+- 🎲 **Simulations multiples configurables** : 1 à 50 trajectoires paramétrables
+- 🛡️ **Système de sécurité multi-niveaux** : 5 niveaux d'escalade progressifs
+- ❌ **Refus absolu des trajectoires dangereuses** : protection contre les collisions
+- 📊 **Analyse de sécurité en temps réel** : rapport détaillé des trajectoires
+- 🎯 **Interface utilisateur améliorée** : bouton dynamique et contrôles intuitifs
+- ⚙️ **Configuration persistante** : sauvegarde des paramètres de simulation
+- 🔍 **Marges de sécurité progressives** : de 5 km à 40 km selon le niveau critique
+
 ### Version 1.3 (2025-10-30)
 - 🧭 Trajectoire basée sur le vecteur vitesse (cap + vitesse)
 - 🔄 Virage initial automatique
@@ -595,4 +678,4 @@ Ce projet est à usage éducatif dans le cadre du projet P21 à l'ESTACA.
 
 **🎓 Développé avec passion par les étudiants de l'ESTACA**
 
-*Simulateur de Trajectoire d'Avion - Version 1.3*
+*Simulateur de Trajectoire d'Avion - Version 1.4*
