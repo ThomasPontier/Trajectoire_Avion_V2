@@ -60,6 +60,10 @@ class FlightSimulatorGUI:
         self.trajectory_params = None  # Stocker les paramètres de la trajectoire
         self.cylinders = []  # Liste des cylindres (obstacles)
         
+        # Variables pour les simulations multiples
+        self.multiple_trajectories = []  # Liste des trajectoires multiples
+        self.multiple_trajectories_params = []  # Liste des paramètres des trajectoires multiples
+        
         # Gérer la fermeture de la fenêtre pour sauvegarder la configuration
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
         
@@ -217,10 +221,47 @@ class FlightSimulatorGUI:
         config_notebook.add(obstacles_frame, text="🚧 Obstacles")
         self._create_obstacles_config(obstacles_frame)
         
-        # Sous-onglet 3: Avion
-        aircraft_frame = ttk.Frame(config_notebook, padding="10")
-        config_notebook.add(aircraft_frame, text="✈️ Avion")
-        self._create_aircraft_config(aircraft_frame)
+        # Sous-onglet 3: Avion (avec scrollbar)
+        aircraft_main_frame = ttk.Frame(config_notebook)
+        config_notebook.add(aircraft_main_frame, text="✈️ Avion")
+        
+        # Créer un Canvas avec scrollbar pour l'onglet Avion
+        aircraft_canvas = tk.Canvas(aircraft_main_frame, highlightthickness=0)
+        aircraft_scrollbar = ttk.Scrollbar(aircraft_main_frame, orient="vertical", command=aircraft_canvas.yview)
+        aircraft_scrollable_frame = ttk.Frame(aircraft_canvas, padding="10")
+        
+        aircraft_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: aircraft_canvas.configure(scrollregion=aircraft_canvas.bbox("all"))
+        )
+        
+        aircraft_canvas.create_window((0, 0), window=aircraft_scrollable_frame, anchor="nw")
+        aircraft_canvas.configure(yscrollcommand=aircraft_scrollbar.set)
+        
+        # Pack des éléments
+        aircraft_canvas.pack(side="left", fill="both", expand=True)
+        aircraft_scrollbar.pack(side="right", fill="y")
+        
+        # Bind mousewheel pour scroll avec la souris
+        def _on_mousewheel(event):
+            aircraft_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        # Bind des événements de défilement
+        aircraft_canvas.bind("<MouseWheel>", _on_mousewheel)
+        aircraft_canvas.bind("<Button-4>", lambda e: aircraft_canvas.yview_scroll(-1, "units"))  # Linux
+        aircraft_canvas.bind("<Button-5>", lambda e: aircraft_canvas.yview_scroll(1, "units"))   # Linux
+        
+        # Permettre le focus sur le canvas pour les touches du clavier
+        aircraft_canvas.focus_set()
+        aircraft_canvas.bind("<Up>", lambda e: aircraft_canvas.yview_scroll(-1, "units"))
+        aircraft_canvas.bind("<Down>", lambda e: aircraft_canvas.yview_scroll(1, "units"))
+        aircraft_canvas.bind("<Prior>", lambda e: aircraft_canvas.yview_scroll(-10, "units"))  # Page Up
+        aircraft_canvas.bind("<Next>", lambda e: aircraft_canvas.yview_scroll(10, "units"))    # Page Down
+        
+        # Sauvegarder la référence du canvas pour pouvoir y accéder plus tard
+        self.aircraft_canvas = aircraft_canvas
+        
+        self._create_aircraft_config(aircraft_scrollable_frame)
         
         # Partie droite : Vue 3D de prévisualisation
         right_frame = ttk.Frame(paned)
@@ -668,7 +709,14 @@ class FlightSimulatorGUI:
         
         ttk.Button(button_frame, text="Valider Position", command=self._validate_position).pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Lancer Simulation", command=self._run_simulation).pack(fill=tk.X, pady=5)
+        ttk.Button(button_frame, text="10 Simulations Aléatoires", command=self._run_multiple_random_simulations).pack(fill=tk.X, pady=5)
+        ttk.Button(button_frame, text="Effacer Trajectoires Multiples", command=self._clear_multiple_trajectories).pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Réinitialiser", command=self._reset).pack(fill=tk.X, pady=5)
+        
+        # Mettre à jour la région de scroll après ajout de tous les widgets
+        parent.update_idletasks()
+        if hasattr(self, 'aircraft_canvas'):
+            self.aircraft_canvas.configure(scrollregion=self.aircraft_canvas.bbox("all"))
         
 
     def _update_environment(self):
@@ -1470,6 +1518,31 @@ class FlightSimulatorGUI:
             
             print(f"✅ TRAJECTOIRE AFFICHÉE AVEC SUCCÈS\n")
         
+        # Afficher les trajectoires multiples s'il y en a
+        if hasattr(self, 'multiple_trajectories') and self.multiple_trajectories:
+            print(f"\n🌈 AFFICHAGE DE {len(self.multiple_trajectories)} TRAJECTOIRES MULTIPLES")
+            
+            # Couleurs distinctes pour les trajectoires multiples
+            colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+            
+            for i, trajectory in enumerate(self.multiple_trajectories):
+                color = colors[i % len(colors)]  # Recycler les couleurs si plus de 10
+                
+                print(f"   🎨 Trajectoire {i+1}: {len(trajectory)} points en {color}")
+                
+                # Dessiner la trajectoire complète avec une couleur unique
+                self.ax_3d.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2], 
+                               color=color, linewidth=2.0, alpha=0.7, 
+                               label=f'Trajectoire {i+1}')
+                
+                # Marquer le point de départ
+                start_point = trajectory[0]
+                self.ax_3d.scatter([start_point[0]], [start_point[1]], [start_point[2]], 
+                                  c=color, marker='o', s=80, alpha=0.8, 
+                                  edgecolors='black', linewidths=1)
+            
+            print(f"✅ {len(self.multiple_trajectories)} TRAJECTOIRES MULTIPLES AFFICHÉES\n")
+        
         # Dessiner les cylindres (obstacles) s'ils existent
         if hasattr(self, 'cylinders') and self.cylinders:
             for i, cyl in enumerate(self.cylinders):
@@ -1656,6 +1729,41 @@ class FlightSimulatorGUI:
             self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 
                            'g-', linewidth=2, alpha=0.9)
         
+        # Dessiner les trajectoires multiples si elles existent
+        if hasattr(self, 'multiple_trajectories') and self.multiple_trajectories:
+            print(f"   🌈 Dessin de {len(self.multiple_trajectories)} trajectoires multiples dans les vues 2D")
+            
+            # Couleurs distinctes pour les trajectoires multiples
+            colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+            
+            for i, trajectory in enumerate(self.multiple_trajectories):
+                color = colors[i % len(colors)]
+                
+                # Vue XY (dessus)
+                self.ax_xy.plot(trajectory[:, 0], trajectory[:, 1], 
+                               color=color, linewidth=1.5, alpha=0.6, 
+                               label=f'Traj. {i+1}' if i < 3 else '')  # Limiter les labels pour éviter l'encombrement
+                
+                # Vue XZ (face)
+                self.ax_xz.plot(trajectory[:, 0], trajectory[:, 2], 
+                               color=color, linewidth=1.5, alpha=0.6)
+                
+                # Vue YZ (côté)
+                self.ax_yz.plot(trajectory[:, 1], trajectory[:, 2], 
+                               color=color, linewidth=1.5, alpha=0.6)
+                
+                # Marquer les points de départ
+                start_point = trajectory[0]
+                self.ax_xy.scatter([start_point[0]], [start_point[1]], 
+                                  c=color, marker='o', s=50, alpha=0.8, 
+                                  edgecolors='black', linewidths=0.5)
+                self.ax_xz.scatter([start_point[0]], [start_point[2]], 
+                                  c=color, marker='o', s=50, alpha=0.8, 
+                                  edgecolors='black', linewidths=0.5)
+                self.ax_yz.scatter([start_point[1]], [start_point[2]], 
+                                  c=color, marker='o', s=50, alpha=0.8, 
+                                  edgecolors='black', linewidths=0.5)
+        
         # Légende commune
         handles, labels = self.ax_xy.get_legend_handles_labels()
         if handles:
@@ -1767,6 +1875,96 @@ class FlightSimulatorGUI:
         
         self.fig_params.tight_layout(pad=2.0)
         self.canvas_params.draw()
+    
+    def _draw_multiple_parameters(self):
+        """Dessine les graphiques de paramètres pour toutes les trajectoires multiples"""
+        
+        if not hasattr(self, 'multiple_trajectories_params') or not self.multiple_trajectories_params:
+            return
+        
+        self.fig_params.clear()
+        
+        print(f"\n📊 AFFICHAGE DES PARAMÈTRES DE {len(self.multiple_trajectories_params)} TRAJECTOIRES")
+        
+        # Couleurs distinctes pour les trajectoires multiples
+        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+        
+        # Graphique 1: Altitude
+        ax1 = self.fig_params.add_subplot(2, 2, 1)
+        ax1.set_xlabel('Temps (s)', fontsize=9)
+        ax1.set_ylabel('Altitude (km)', fontsize=9)
+        ax1.set_title('Altitude au cours du temps (Toutes trajectoires)', fontsize=10, fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        
+        # Graphique 2: Pente
+        ax2 = self.fig_params.add_subplot(2, 2, 2)
+        ax2.set_xlabel('Temps (s)', fontsize=9)
+        ax2.set_ylabel('Pente (°)', fontsize=9)
+        ax2.set_title('Pente au cours du temps (Toutes trajectoires)', fontsize=10, fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        ax2.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+        
+        # Graphique 3: Vitesse
+        ax3 = self.fig_params.add_subplot(2, 2, 3)
+        ax3.set_xlabel('Temps (s)', fontsize=9)
+        ax3.set_ylabel('Vitesse (km/h)', fontsize=9)
+        ax3.set_title('Vitesse au cours du temps (Toutes trajectoires)', fontsize=10, fontweight='bold')
+        ax3.grid(True, alpha=0.3)
+        
+        # Graphique 4: Taux de virage (si disponible)
+        ax4 = self.fig_params.add_subplot(2, 2, 4)
+        ax4.set_xlabel('Temps (s)', fontsize=9)
+        ax4.set_ylabel('Taux de virage (°/s)', fontsize=9)
+        ax4.set_title('Taux de virage (Toutes trajectoires)', fontsize=10, fontweight='bold')
+        ax4.grid(True, alpha=0.3)
+        ax4.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+        
+        # Dessiner chaque trajectoire
+        for i, params in enumerate(self.multiple_trajectories_params):
+            color = colors[i % len(colors)]
+            alpha = 0.7 if len(self.multiple_trajectories_params) <= 5 else 0.5
+            linewidth = 1.5 if len(self.multiple_trajectories_params) <= 5 else 1.0
+            
+            label = f'Traj. {i+1}' if i < 10 else ''  # Limiter les labels
+            
+            # Altitude
+            if 'time' in params and 'altitude' in params:
+                ax1.plot(params['time'], params['altitude'], color=color, 
+                        linewidth=linewidth, alpha=alpha, label=label)
+            
+            # Pente
+            if 'time' in params and 'slope' in params:
+                ax2.plot(params['time'], params['slope'], color=color, 
+                        linewidth=linewidth, alpha=alpha, label=label)
+            
+            # Vitesse
+            if 'time' in params and 'speed' in params:
+                ax3.plot(params['time'], params['speed'], color=color, 
+                        linewidth=linewidth, alpha=alpha, label=label)
+            
+            # Taux de virage (si disponible)
+            if 'time' in params and 'turn_rate' in params and params['turn_rate'] is not None:
+                ax4.plot(params['time'], params['turn_rate'], color=color, 
+                        linewidth=linewidth, alpha=alpha, label=label)
+        
+        # Afficher les limites de pente si l'avion existe
+        if self.aircraft:
+            ax2.axhline(y=self.aircraft.max_climb_slope, color='green', 
+                       linestyle='--', alpha=0.5, label=f'Montée max ({self.aircraft.max_climb_slope}°)')
+            ax2.axhline(y=self.aircraft.max_descent_slope, color='red', 
+                       linestyle='--', alpha=0.5, label=f'Descente max ({self.aircraft.max_descent_slope}°)')
+        
+        # Légendes (seulement si pas trop de trajectoires)
+        if len(self.multiple_trajectories_params) <= 10:
+            ax1.legend(fontsize=7, loc='best')
+            ax2.legend(fontsize=7, loc='best')
+            ax3.legend(fontsize=7, loc='best')
+            ax4.legend(fontsize=7, loc='best')
+        
+        self.fig_params.tight_layout(pad=2.0)
+        self.canvas_params.draw()
+        
+        print(f"✅ PARAMÈTRES DE {len(self.multiple_trajectories_params)} TRAJECTOIRES AFFICHÉS\n")
         
     def _on_aircraft_type_changed(self, event=None):
         """Appelé quand le type d'avion change"""
@@ -1835,6 +2033,10 @@ class FlightSimulatorGUI:
             messagebox.showwarning("Attention", "Veuillez d'abord valider la position de l'avion!")
             return
         
+        # Réinitialiser les trajectoires multiples pour basculer vers mode simple
+        self.multiple_trajectories = []
+        self.multiple_trajectories_params = []
+        
         try:
             # Calculer la trajectoire selon l'option choisie
             calculator = TrajectoryCalculator(self.environment)
@@ -1902,6 +2104,199 @@ class FlightSimulatorGUI:
             
         except Exception as e:
             messagebox.showerror("Erreur", f"Erreur lors de la simulation: {str(e)}")
+    
+    def _generate_random_position(self):
+        """
+        Génère une position aléatoire valide selon les contraintes:
+        - Plus de 1km du sol (altitude > 1km)
+        - Plus de 1km des bords de la carte 
+        - Pas dans un obstacle (cylindres)
+        - Plus de 20km du point FAF (distance horizontale dans le plan XY)
+        
+        Returns:
+            tuple: (x, y, z, heading) position valide ou None si impossible
+        """
+        import random
+        
+        if self.environment is None:
+            return None
+        
+        max_attempts = 1000
+        faf_pos = self.environment.faf_position
+        
+        for attempt in range(max_attempts):
+            # Générer position aléatoire avec contraintes de bords (>1km)
+            x = random.uniform(1.0, self.environment.size_x - 1.0)
+            y = random.uniform(1.0, self.environment.size_y - 1.0)
+            z = random.uniform(1.0, self.environment.size_z)  # >1km du sol
+            
+            # Cap aléatoire
+            heading = random.uniform(0, 360)
+            
+            position = np.array([x, y, z])
+            
+            # Vérifier distance au FAF dans le plan XY uniquement (>20km)
+            position_xy = np.array([x, y])
+            faf_pos_xy = np.array([faf_pos[0], faf_pos[1]])
+            distance_to_faf_xy = np.linalg.norm(position_xy - faf_pos_xy)
+            if distance_to_faf_xy <= 20.0:
+                continue
+                
+            # Vérifier qu'on n'est pas dans un obstacle
+            in_obstacle = False
+            for cylinder in self.cylinders:
+                # Distance horizontale au centre du cylindre
+                dist_horizontal = np.sqrt((x - cylinder['x'])**2 + (y - cylinder['y'])**2)
+                # Vérifier si dans le cylindre (horizontalement et verticalement)
+                if (dist_horizontal <= cylinder['radius'] and z <= cylinder['height']):
+                    in_obstacle = True
+                    break
+            
+            if not in_obstacle:
+                return (x, y, z, heading)
+        
+        # Si aucune position trouvée après max_attempts
+        return None
+    
+    def _run_multiple_random_simulations(self):
+        """Lance 10 simulations aléatoires avec positions différentes"""
+        
+        if self.environment is None:
+            messagebox.showwarning("Attention", "Veuillez d'abord configurer l'environnement!")
+            return
+        
+        # Réinitialiser la trajectoire simple pour basculer vers mode multiple
+        self.trajectory = None
+        self.trajectory_params = None
+        
+        # Garder les trajectoires multiples existantes (mode cumul)
+        if not hasattr(self, 'multiple_trajectories'):
+            self.multiple_trajectories = []
+        if not hasattr(self, 'multiple_trajectories_params'):
+            self.multiple_trajectories_params = []
+        
+        # Sauvegarder la position actuelle de l'avion
+        original_aircraft_config = None
+        if self.aircraft:
+            original_aircraft_config = {
+                'position': np.array(self.aircraft.position),
+                'speed': self.aircraft.speed,
+                'heading': self.aircraft.heading,
+                'aircraft_type': self.aircraft.aircraft_type
+            }
+        
+        successful_simulations = 0
+        failed_positions = 0
+        
+        try:
+            for i in range(10):
+                print(f"\n🎲 === SIMULATION ALÉATOIRE {i+1}/10 ===")
+                
+                # Générer position aléatoire valide
+                random_pos = self._generate_random_position()
+                if random_pos is None:
+                    print(f"❌ Impossible de générer une position valide pour la simulation {i+1}")
+                    failed_positions += 1
+                    continue
+                
+                x, y, z, heading = random_pos
+                
+                # Calculer la distance au FAF en XY pour confirmation
+                faf_pos = self.environment.faf_position
+                distance_xy = np.sqrt((x - faf_pos[0])**2 + (y - faf_pos[1])**2)
+                print(f"📍 Position générée: ({x:.1f}, {y:.1f}, {z:.1f}) km, cap: {heading:.0f}°")
+                print(f"   📏 Distance au FAF (plan XY): {distance_xy:.1f} km")
+                
+                # Créer un avion temporaire à cette position
+                from aircraft import Aircraft, AircraftType
+                aircraft_type = self.aircraft_type_var.get() if hasattr(self, 'aircraft_type_var') else "commercial"
+                speed = self.speed_var.get() if hasattr(self, 'speed_var') else 250.0
+                
+                temp_aircraft = Aircraft(
+                    aircraft_type=getattr(AircraftType, aircraft_type.upper()),
+                    position=np.array([x, y, z]),
+                    speed=speed,
+                    heading=heading
+                )
+                
+                # Calculer la trajectoire
+                calculator = TrajectoryCalculator(self.environment)
+                
+                try:
+                    if hasattr(self, 'use_realistic_turns_var') and self.use_realistic_turns_var.get():
+                        trajectory, trajectory_params = calculator.calculate_trajectory_with_turn(
+                            temp_aircraft, self.cylinders
+                        )
+                    else:
+                        trajectory, trajectory_params = calculator.calculate_trajectory(
+                            temp_aircraft, self.cylinders
+                        )
+                    
+                    # Stocker la trajectoire
+                    self.multiple_trajectories.append(trajectory)
+                    self.multiple_trajectories_params.append(trajectory_params)
+                    successful_simulations += 1
+                    
+                    print(f"✅ Simulation {i+1} réussie - {len(trajectory)} points calculés")
+                    
+                except Exception as e:
+                    print(f"❌ Erreur simulation {i+1}: {str(e)}")
+                    continue
+            
+            # Restaurer l'avion original
+            if original_aircraft_config:
+                self.aircraft = Aircraft(
+                    aircraft_type=getattr(AircraftType, original_aircraft_config['aircraft_type'].upper()),
+                    position=original_aircraft_config['position'],
+                    speed=original_aircraft_config['speed'],
+                    heading=original_aircraft_config['heading']
+                )
+            
+            # Mettre à jour l'affichage
+            self._draw_environment()
+            self._draw_multiple_parameters()  # Afficher les paramètres de toutes les trajectoires
+            
+            # Message de résultats
+            if successful_simulations > 0:
+                total_trajectories = len(self.multiple_trajectories)
+                info_msg = f"✅ {successful_simulations}/10 nouvelles simulations réussies!\n"
+                info_msg += f"📊 Total des trajectoires affichées: {total_trajectories}\n\n"
+                if failed_positions > 0:
+                    info_msg += f"⚠️ {failed_positions} positions invalides générées\n\n"
+                
+                info_msg += "Les trajectoires sont affichées avec des couleurs différentes:\n"
+                colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+                for i in range(successful_simulations):
+                    color_name = colors[i] if i < len(colors) else f"couleur_{i+1}"
+                    distance = self.multiple_trajectories_params[i].get('distance', 0)
+                    flight_time = self.multiple_trajectories_params[i].get('flight_time', 0)
+                    info_msg += f"• Trajectoire {i+1}: {color_name} - {distance:.1f}km, {flight_time*60:.1f}min\n"
+                
+                messagebox.showinfo("Simulations Terminées", info_msg)
+            else:
+                messagebox.showerror("Échec", "Aucune simulation n'a pu être réalisée.\nVérifiez les contraintes de l'environnement.")
+        
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors des simulations multiples: {str(e)}")
+    
+    def _clear_multiple_trajectories(self):
+        """Efface toutes les trajectoires multiples"""
+        
+        if hasattr(self, 'multiple_trajectories') and self.multiple_trajectories:
+            count = len(self.multiple_trajectories)
+            self.multiple_trajectories = []
+            self.multiple_trajectories_params = []
+            
+            # Mettre à jour l'affichage
+            self._draw_environment()
+            
+            # Réinitialiser les graphiques de paramètres
+            self.fig_params.clear()
+            self.canvas_params.draw()
+            
+            messagebox.showinfo("Effacement", f"{count} trajectoires multiples effacées!")
+        else:
+            messagebox.showinfo("Information", "Aucune trajectoire multiple à effacer.")
             
     def _reset(self):
         """Réinitialise la simulation"""
@@ -1909,6 +2304,10 @@ class FlightSimulatorGUI:
         self.aircraft = None
         self.trajectory = None
         self.trajectory_params = None
+        
+        # Réinitialiser les trajectoires multiples
+        self.multiple_trajectories = []
+        self.multiple_trajectories_params = []
         
         # Réinitialiser les valeurs
         self.pos_x_var.set(0.0)
