@@ -1,6 +1,6 @@
 {
     "environment": {
-        "size_x": 200.0,
+        "size_x": 202.0,
         "size_y": 200.0,
         "size_z": 7.0,
         "airport": {
@@ -35,20 +35,18 @@
         }
     ],
     "aircraft": {
-        "type": "commercial",
+        "type": "light",
         "position": {
             "x": 160.0,
-            "y": 159.0,
+            "y": 160.0,
             "z": 4.0
         },
-        "speed": 250.0,
-        "heading": 180.0
-    },
-    "options": {
-        "use_realistic_turns": true,
-        "use_automatic_turns": true
+        "speed": 180.0,
+        "heading": 180.0,
+        "max_climb_slope": 15.0,
+        "max_descent_slope": -10.0
     },
     "simulation": {
-        "num_trajectories": 20
+        "num_trajectories": 2
     }
 }

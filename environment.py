@@ -59,27 +59,3 @@ class Environment:
             'y': self.faf_position[1],
             'z': self.faf_position[2]
         }
-    
-    def is_position_valid(self, position):
-        """
-        Vérifie si une position est dans l'espace aérien
-        
-        Args:
-            position: Vecteur numpy [x, y, z]
-            
-        Returns:
-            bool: True si la position est valide
-        """
-        return (0 <= position[0] <= self.size_x and
-                0 <= position[1] <= self.size_y and
-                0 <= position[2] <= self.size_z)
-    
-    def get_approach_axis(self):
-        """
-        Retourne le vecteur de l'axe d'approche (du FAF vers l'aéroport)
-        
-        Returns:
-            Vecteur numpy normalisé
-        """
-        axis = self.airport_position - self.faf_position
-        return axis / np.linalg.norm(axis)

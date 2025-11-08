@@ -12,38 +12,16 @@ class TrajectoryCalculator:
     """
     
     def __init__(self, environment):
-        """
-        Initialise le calculateur de trajectoire
-        
-        Args:
-            environment: Instance de la classe Environment
-        """
+        """Initialise le calculateur avec l'environnement (aéroport, FAF, obstacles)."""
         self.environment = environment
         self.retry_trajectories = []  # Stockage des trajectoires de tentatives
         self.retry_trajectories_info = []  # Informations sur chaque tentative
         
     def calculate_trajectory(self, aircraft, cylinders=None):
         """
-        Calcule la trajectoire optimale de l'avion vers le point FAF
-        avec alignement progressif sur l'axe de la piste.
-        
-        Stratégie V1.4:
-        - Vol initial dans le cap de l'avion
-        - Virage progressif pour s'aligner avec l'axe de la piste
-        - Suivi de l'axe jusqu'au FAF avec descente
-        - Évitement automatique des obstacles si présents
-        
-        Note: Cette méthode est utilisée quand "Virages réalistes" est DÉSACTIVÉ.
-        Elle crée une trajectoire qui s'aligne avec l'axe de la piste (aéroport→FAF).
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            cylinders: Liste optionnelle de cylindres (obstacles) à éviter
-            
-        Returns:
-            tuple: (trajectory, parameters)
-                - trajectory: Array numpy de positions [N x 3]
-                - parameters: Dict avec les paramètres au cours du temps
+        Calcule la trajectoire optimale vers le FAF avec alignement progressif sur l'axe de la piste.
+        Mode virages simplifiés : vol initial dans le cap, virage pour s'aligner, suivi de l'axe avec
+        descente et évitement automatique des obstacles.
         """
         
         if cylinders is None:
@@ -260,16 +238,7 @@ class TrajectoryCalculator:
     
     def _calculate_simple_trajectory(self, aircraft, start_pos, target_pos):
         """
-        Calcule une trajectoire simple en ligne droite (sans contrainte de pente)
-        avec un nombre élevé de points pour un tracé lisse
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            start_pos: Position de départ
-            target_pos: Position cible
-            
-        Returns:
-            tuple: (trajectory, parameters)
+        Trajectoire directe en ligne droite avec haute densité de points pour un tracé lisse.
         """
         
         distance_vector = target_pos - start_pos
@@ -287,143 +256,6 @@ class TrajectoryCalculator:
         
         parameters = self._calculate_parameters(trajectory, aircraft.speed)
         parameters['n_points'] = n_points
-        
-        return trajectory, parameters
-    
-    def _calculate_trajectory_with_initial_turn(self, aircraft, start_pos, target_pos, 
-                                                current_direction, target_direction):
-        """
-        Calcule une trajectoire avec un segment initial dans la direction du cap,
-        puis un virage pour s'aligner vers le FAF.
-        
-        Cette méthode crée :
-        1. Un segment en ligne droite dans la direction du cap initial
-        2. Un arc de cercle pour tourner vers la direction du FAF
-        3. Une ligne droite vers le FAF avec gestion de l'altitude
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            current_direction: Direction actuelle de l'avion (vecteur unitaire 2D)
-            target_direction: Direction vers le FAF (vecteur unitaire 2D)
-            
-        Returns:
-            tuple: (trajectory, parameters)
-        """
-        
-        print("\n🔄 CALCUL TRAJECTOIRE AVEC VOL INITIAL PUIS VIRAGE")
-        print("-"*70)
-        
-        # Calculer le rayon de virage
-        min_radius = aircraft.calculate_min_turn_radius()
-        print(f"📐 Rayon de virage minimum: {min_radius:.3f} km")
-        
-        # Distance de vol dans la direction initiale avant le virage
-        # Proportionnelle à la distance totale (15-25% de la distance au FAF)
-        total_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
-        straight_initial_distance = min(max(total_distance * 0.2, 2.0), 10.0)  # Entre 2 et 10 km
-        print(f"✈️  Distance vol initial dans le cap {aircraft.heading:.0f}°: {straight_initial_distance:.2f} km")
-        
-        # Phase 0: Vol en ligne droite dans la direction du cap initial
-        print(f"\n🟦 Phase 0: Vol initial dans la direction du cap...")
-        initial_straight_end = start_pos[:2] + current_direction * straight_initial_distance
-        initial_straight_pos_3d = np.array([initial_straight_end[0], initial_straight_end[1], start_pos[2]])
-        
-        # Créer le segment initial
-        n_initial_points = max(50, int(straight_initial_distance * 50))
-        initial_trajectory = np.zeros((n_initial_points, 3))
-        for i in range(n_initial_points):
-            t = i / (n_initial_points - 1)
-            initial_trajectory[i] = start_pos + t * (initial_straight_pos_3d - start_pos)
-        
-        print(f"   ✓ Segment initial créé: {len(initial_trajectory)} points")
-        print(f"   📍 Position fin vol initial: ({initial_straight_end[0]:.1f}, {initial_straight_end[1]:.1f}) km")
-        
-        # Recalculer la direction vers le FAF depuis la nouvelle position
-        new_direction_to_faf = target_pos[:2] - initial_straight_end
-        new_direction_to_faf = new_direction_to_faf / np.linalg.norm(new_direction_to_faf)
-        
-        # Déterminer le sens de virage (gauche = 1, droite = -1)
-        cross = current_direction[0] * new_direction_to_faf[1] - current_direction[1] * new_direction_to_faf[0]
-        turn_direction = 1 if cross > 0 else -1
-        turn_direction_text = "GAUCHE" if turn_direction > 0 else "DROITE"
-        print(f"\n↪️  Sens de virage: {turn_direction_text}")
-        
-        # Calculer l'angle de virage nécessaire
-        cos_angle = np.dot(current_direction, new_direction_to_faf)
-        turn_angle = np.arccos(np.clip(cos_angle, -1.0, 1.0))
-        
-        # Si sens horaire, angle négatif
-        if turn_direction < 0:
-            turn_angle = -turn_angle
-        
-        print(f"📐 Angle de virage: {np.degrees(turn_angle):.1f}°")
-        
-        # Centre du cercle de virage (depuis la fin du vol initial)
-        perp_direction = np.array([-current_direction[1], current_direction[0]]) * turn_direction
-        turn_center = initial_straight_end + perp_direction * min_radius
-        print(f"⭕ Centre du cercle: ({turn_center[0]:.1f}, {turn_center[1]:.1f}) km")
-        
-        # Point final du virage
-        vec_to_start = initial_straight_end - turn_center
-        cos_a = np.cos(turn_angle)
-        sin_a = np.sin(turn_angle)
-        rotated_vec = np.array([
-            vec_to_start[0] * cos_a - vec_to_start[1] * sin_a,
-            vec_to_start[0] * sin_a + vec_to_start[1] * cos_a
-        ])
-        
-        turn_end_point = turn_center + rotated_vec
-        print(f"🎯 Point fin de virage: ({turn_end_point[0]:.1f}, {turn_end_point[1]:.1f}) km")
-        
-        # Phase 1: Arc de virage
-        print(f"\n🔵 Phase 1: Création arc de virage...")
-        arc_trajectory = self._create_arc_trajectory(
-            initial_straight_end, turn_center, turn_angle, min_radius, start_pos[2]
-        )
-        print(f"   ✓ Arc créé: {len(arc_trajectory)} points")
-        
-        # Phase 2: Ligne droite vers le FAF avec gestion altitude
-        post_turn_pos = np.array([turn_end_point[0], turn_end_point[1], start_pos[2]])
-        print(f"\n🔵 Phase 2: Trajectoire droite post-virage vers FAF...")
-        print(f"   Position après virage: ({post_turn_pos[0]:.1f}, {post_turn_pos[1]:.1f}, {post_turn_pos[2]:.1f}) km")
-        
-        # Calculer la trajectoire droite avec contrainte de pente
-        altitude_diff = target_pos[2] - post_turn_pos[2]
-        print(f"   Différence d'altitude vers FAF: {altitude_diff:.2f} km")
-        
-        if altitude_diff < 0 and aircraft.max_descent_slope is not None:
-            print(f"   ⬇️  Descente avec contrainte de pente (max {aircraft.max_descent_slope:.1f}°)")
-            straight_trajectory, _ = self._calculate_trajectory_with_slope_constraint(
-                aircraft, post_turn_pos, target_pos
-            )
-        else:
-            print(f"   ➡️  Trajectoire simple vers FAF")
-            straight_trajectory, _ = self._calculate_simple_trajectory(
-                aircraft, post_turn_pos, target_pos
-            )
-        
-        print(f"   ✓ Segment droit créé: {len(straight_trajectory)} points")
-        
-        # Combiner les trois segments
-        trajectory = np.vstack([initial_trajectory, arc_trajectory, straight_trajectory])
-        print(f"\n✅ TRAJECTOIRE TOTALE: {len(trajectory)} points")
-        print(f"   - Segment initial: {len(initial_trajectory)} points")
-        print(f"   - Arc de virage: {len(arc_trajectory)} points")
-        print(f"   - Segment final: {len(straight_trajectory)} points")
-        print("=" * 70 + "\n")
-        
-        # Calculer les paramètres
-        parameters = self._calculate_parameters(trajectory, aircraft.speed)
-        parameters['turn_radius'] = min_radius
-        parameters['turn_angle'] = np.degrees(turn_angle)
-        parameters['turn_start_point'] = initial_straight_end  # Nouveau : point de début du virage
-        parameters['turn_end_point'] = turn_end_point
-        parameters['intercept_point'] = turn_end_point[:2]  # Point 2D pour l'affichage
-        parameters['initial_segment_end_index'] = len(initial_trajectory)  # Nouveau : index fin du segment initial
-        parameters['turn_segment_end_index'] = len(initial_trajectory) + len(arc_trajectory)  # Nouveau
-        parameters['n_points'] = len(trajectory)
         
         return trajectory, parameters
     
@@ -466,19 +298,8 @@ class TrajectoryCalculator:
     def _calculate_runway_intercept_point(self, start_pos, current_dir, airport_pos, 
                                           faf_pos, runway_dir, angle_to_runway):
         """
-        Calcule le point optimal d'interception sur l'axe de la piste.
-        Le point est choisi pour permettre un alignement progressif AVANT le FAF.
-        
-        Args:
-            start_pos: Position actuelle [x, y]
-            current_dir: Direction actuelle (vecteur unitaire)
-            airport_pos: Position de l'aéroport [x, y]
-            faf_pos: Position du FAF [x, y]
-            runway_dir: Direction de l'axe piste (vecteur unitaire)
-            angle_to_runway: Angle entre cap actuel et axe piste (degrés)
-            
-        Returns:
-            numpy array: Point d'interception [x, y]
+        Calcule le point d'interception optimal sur l'axe piste en projetant la position actuelle
+        et en ajustant selon l'angle et la distance pour un alignement progressif avant le FAF.
         """
         
         # Projection orthogonale de la position actuelle sur l'axe de la piste
@@ -522,22 +343,8 @@ class TrajectoryCalculator:
     def _build_trajectory_with_runway_alignment(self, aircraft, start_pos, intercept_point, 
                                                  faf_pos, current_dir, runway_dir, cylinders=None):
         """
-        Construit une trajectoire en 2 phases avec alignement progressif sur l'axe de la piste.
-        
-        Phase 1: Vol initial dans le cap actuel
-        Phase 2: Virage progressif jusqu'au FAF avec alignement sur l'axe
-        
-        Args:
-            aircraft: Instance Aircraft
-            start_pos: Position de départ [x, y, z]
-            intercept_point: Point d'interception sur l'axe [x, y]
-            faf_pos: Position du FAF [x, y, z]
-            current_dir: Direction actuelle (vecteur unitaire 2D)
-            runway_dir: Direction de l'axe piste (vecteur unitaire 2D)
-            cylinders: Liste optionnelle de cylindres (obstacles) à éviter
-            
-        Returns:
-            tuple: (trajectory, parameters)
+        Construit une trajectoire en 2 phases : vol initial dans le cap puis virage progressif
+        jusqu'au FAF avec alignement sur l'axe piste, gestion altitude/pente et évitement d'obstacles.
         """
         
         if cylinders is None:
@@ -912,16 +719,8 @@ class TrajectoryCalculator:
     
     def _calculate_trajectory_along_runway(self, aircraft, start_pos, faf_pos, runway_dir):
         """
-        Calcule la trajectoire le long de l'axe de la piste avec gestion de l'altitude.
-        
-        Args:
-            aircraft: Instance Aircraft
-            start_pos: Position de départ sur l'axe [x, y, z]
-            faf_pos: Position du FAF [x, y, z]
-            runway_dir: Direction de l'axe piste (vecteur unitaire 2D)
-            
-        Returns:
-            numpy array: Points de la trajectoire [N x 3]
+        Calcule la trajectoire le long de l'axe piste avec gestion altitude (palier, transition smooth,
+        descente à pente max) pour arriver exactement au FAF.
         """
         
         horizontal_distance = np.linalg.norm(faf_pos[:2] - start_pos[:2])
@@ -1006,14 +805,8 @@ class TrajectoryCalculator:
     
     def _calculate_parameters(self, trajectory, speed):
         """
-        Calcule les paramètres de vol à partir d'une trajectoire
-        
-        Args:
-            trajectory: Array numpy de positions [N x 3]
-            speed: Vitesse de l'avion en km/h
-            
-        Returns:
-            dict: Paramètres au cours du temps
+        Calcule les paramètres de vol (temps, altitude, pente, cap, taux de virage) à partir
+        de la trajectoire et de la vitesse.
         """
         
         n_points = len(trajectory)
@@ -1037,49 +830,33 @@ class TrajectoryCalculator:
         # Vitesse (constante)
         speed_array = np.full(n_points, speed)
         
-        # Calculer la pente (en degrés)
+        # Calculer la pente (en degrés) - vectorisé
         slope_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            dz = trajectory[i, 2] - trajectory[i-1, 2]
-            dx = np.linalg.norm(trajectory[i, :2] - trajectory[i-1, :2])
-            if dx > 0:
-                slope_array[i] = np.degrees(np.arctan(dz / dx))
-            elif dz != 0:
-                slope_array[i] = 90.0 if dz > 0 else -90.0
+        if n_points > 1:
+            dz = np.diff(trajectory[:, 2])  # Différences d'altitude
+            dx = np.linalg.norm(np.diff(trajectory[:, :2], axis=0), axis=1)  # Distances horizontales
+            slope_array[1:] = np.where(dx > 0, np.degrees(np.arctan(dz / dx)), 
+                                       np.where(dz != 0, np.where(dz > 0, 90.0, -90.0), 0.0))
+            slope_array[0] = slope_array[1]
         
-        slope_array[0] = slope_array[1] if n_points > 1 else 0
-        
-        # Calculer l'angle de cap (heading) dans le plan XY (en degrés)
-        # 0° = Nord (axe Y+), 90° = Est (axe X+), sens horaire
+        # Calculer l'angle de cap (heading) - vectorisé
         heading_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            dx = trajectory[i, 0] - trajectory[i-1, 0]  # Variation en X
-            dy = trajectory[i, 1] - trajectory[i-1, 1]  # Variation en Y
-            if dx != 0 or dy != 0:
-                # atan2(dx, dy) donne l'angle par rapport au Nord
-                heading_array[i] = np.degrees(np.arctan2(dx, dy))
-                # Normaliser entre 0 et 360
-                if heading_array[i] < 0:
-                    heading_array[i] += 360
+        if n_points > 1:
+            dxy = np.diff(trajectory[:, :2], axis=0)  # Variations [dx, dy]
+            heading_array[1:] = np.degrees(np.arctan2(dxy[:, 0], dxy[:, 1]))  # atan2(dx, dy)
+            heading_array[1:] = np.where(heading_array[1:] < 0, heading_array[1:] + 360, heading_array[1:])
+            heading_array[0] = heading_array[1]
         
-        heading_array[0] = heading_array[1] if n_points > 1 else 0
-        
-        # Calculer le taux de virage (variation de cap en degrés par seconde)
+        # Calculer le taux de virage - vectorisé
         turn_rate_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            if time_array[i] - time_array[i-1] > 0:
-                # Différence d'angle (gestion du passage 0°/360°)
-                delta_heading = heading_array[i] - heading_array[i-1]
-                # Correction pour le passage 0°/360°
-                if delta_heading > 180:
-                    delta_heading -= 360
-                elif delta_heading < -180:
-                    delta_heading += 360
-                
-                delta_time = time_array[i] - time_array[i-1]
-                turn_rate_array[i] = delta_heading / delta_time  # degrés/seconde
-        
-        turn_rate_array[0] = turn_rate_array[1] if n_points > 1 else 0
+        if n_points > 1:
+            delta_time = np.diff(time_array)
+            delta_heading = np.diff(heading_array)
+            # Gestion passage 0°/360°
+            delta_heading = np.where(delta_heading > 180, delta_heading - 360, delta_heading)
+            delta_heading = np.where(delta_heading < -180, delta_heading + 360, delta_heading)
+            turn_rate_array[1:] = np.where(delta_time > 0, delta_heading / delta_time, 0.0)
+            turn_rate_array[0] = turn_rate_array[1]
         
         return {
             'time': time_array,
@@ -1094,16 +871,8 @@ class TrajectoryCalculator:
     
     def _calculate_parameters_with_speed_profile(self, trajectory, initial_speed, arc_length, speed_profile):
         """
-        Calcule les paramètres de la trajectoire avec profil de vitesse variable.
-        
-        Args:
-            trajectory: Array numpy de positions [N x 3]
-            initial_speed: Vitesse initiale en km/h
-            arc_length: Nombre de points dans l'arc de virage (vitesse constante)
-            speed_profile: Array des vitesses pour la phase d'approche [N]
-            
-        Returns:
-            dict: Paramètres au cours du temps
+        Calcule les paramètres avec profil de vitesse variable : vitesse constante pendant le virage,
+        puis vitesse variable en approche (décélération progressive).
         """
         
         n_points = len(trajectory)
@@ -1132,44 +901,32 @@ class TrajectoryCalculator:
         # Altitude
         altitude_array = trajectory[:, 2]
         
-        # Calculer la pente (en degrés)
+        # Calculer la pente (en degrés) - vectorisé
         slope_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            dz = trajectory[i, 2] - trajectory[i-1, 2]
-            dx = np.linalg.norm(trajectory[i, :2] - trajectory[i-1, :2])
-            if dx > 0:
-                slope_array[i] = np.degrees(np.arctan(dz / dx))
-            elif dz != 0:
-                slope_array[i] = 90.0 if dz > 0 else -90.0
+        if n_points > 1:
+            dz = np.diff(trajectory[:, 2])
+            dx = np.linalg.norm(np.diff(trajectory[:, :2], axis=0), axis=1)
+            slope_array[1:] = np.where(dx > 0, np.degrees(np.arctan(dz / dx)),
+                                       np.where(dz != 0, np.where(dz > 0, 90.0, -90.0), 0.0))
+            slope_array[0] = slope_array[1]
         
-        slope_array[0] = slope_array[1] if n_points > 1 else 0
-        
-        # Calculer l'angle de cap (heading) dans le plan XY (en degrés)
+        # Calculer l'angle de cap (heading) - vectorisé
         heading_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            dx = trajectory[i, 0] - trajectory[i-1, 0]
-            dy = trajectory[i, 1] - trajectory[i-1, 1]
-            if dx != 0 or dy != 0:
-                heading_array[i] = np.degrees(np.arctan2(dx, dy))
-                if heading_array[i] < 0:
-                    heading_array[i] += 360
+        if n_points > 1:
+            dxy = np.diff(trajectory[:, :2], axis=0)
+            heading_array[1:] = np.degrees(np.arctan2(dxy[:, 0], dxy[:, 1]))
+            heading_array[1:] = np.where(heading_array[1:] < 0, heading_array[1:] + 360, heading_array[1:])
+            heading_array[0] = heading_array[1]
         
-        heading_array[0] = heading_array[1] if n_points > 1 else 0
-        
-        # Calculer le taux de virage (variation de cap en degrés par seconde)
+        # Calculer le taux de virage - vectorisé
         turn_rate_array = np.zeros(n_points)
-        for i in range(1, n_points):
-            if time_array[i] - time_array[i-1] > 0:
-                delta_heading = heading_array[i] - heading_array[i-1]
-                if delta_heading > 180:
-                    delta_heading -= 360
-                elif delta_heading < -180:
-                    delta_heading += 360
-                
-                delta_time = time_array[i] - time_array[i-1]
-                turn_rate_array[i] = delta_heading / delta_time
-        
-        turn_rate_array[0] = turn_rate_array[1] if n_points > 1 else 0
+        if n_points > 1:
+            delta_time = np.diff(time_array)
+            delta_heading = np.diff(heading_array)
+            delta_heading = np.where(delta_heading > 180, delta_heading - 360, delta_heading)
+            delta_heading = np.where(delta_heading < -180, delta_heading + 360, delta_heading)
+            turn_rate_array[1:] = np.where(delta_time > 0, delta_heading / delta_time, 0.0)
+            turn_rate_array[0] = turn_rate_array[1]
         
         total_distance = distances[-1]
         flight_time_hours = time_array[-1] / 3600 if time_array[-1] > 0 else 0
@@ -1188,20 +945,8 @@ class TrajectoryCalculator:
     
     def calculate_trajectory_with_turn(self, aircraft, cylinders=None):
         """
-        Calcule une trajectoire réaliste avec virage pour rejoindre l'axe d'approche.
-        
-        Stratégie:
-        1. Calculer le rayon de virage minimum
-        2. Déterminer le point d'interception tangent à l'axe d'approche
-        3. Créer un arc de cercle pour rejoindre l'axe
-        4. Suivre l'axe jusqu'au FAF avec gestion de l'altitude
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            cylinders: Liste optionnelle de cylindres (obstacles) à éviter
-            
-        Returns:
-            tuple: (trajectory, parameters)
+        Mode virages réalistes : calcule trajectoire avec arc de virage tangent à l'axe d'approche,
+        suivi de l'axe jusqu'au FAF avec descente et décélération progressives.
         """
         
         if cylinders is None:
@@ -1296,12 +1041,9 @@ class TrajectoryCalculator:
     def _calculate_tangent_intercept(self, start_pos, current_dir, approach_dir, 
                                      airport_pos, faf_pos, radius):
         """
-        Calcule le point d'interception tangent à l'axe d'approche.
-        
-        Utilise la géométrie des cercles tangents à une droite.
-        
-        Returns:
-            tuple: (intercept_point, turn_center, turn_angle) ou (None, None, None) si impossible
+        Calcule le point d'interception tangent à l'axe d'approche en utilisant la géométrie
+        des cercles tangents : résout l'équation quadratique pour trouver où le cercle de virage
+        touche l'axe d'approche.
         """
         
         # Déterminer le sens de virage (gauche ou droite)
@@ -1381,17 +1123,8 @@ class TrajectoryCalculator:
     
     def _create_arc_trajectory(self, start_pos, center, angle, radius, altitude):
         """
-        Crée les points d'un arc de cercle.
-        
-        Args:
-            start_pos: Position de départ [x, y]
-            center: Centre du cercle [x, y]
-            angle: Angle de rotation (radians, peut être négatif)
-            radius: Rayon du cercle
-            altitude: Altitude constante pendant le virage
-            
-        Returns:
-            numpy array: Points de l'arc [N x 3]
+        Génère les points d'un arc de cercle pour le virage (altitude constante pendant le virage).
+        Densité d'environ 1 point tous les 2 degrés.
         """
         # Nombre de points en fonction de l'angle (environ 1 point tous les 2 degrés)
         n_points = max(int(abs(np.degrees(angle)) / 2), 10)
@@ -1413,17 +1146,8 @@ class TrajectoryCalculator:
     
     def _calculate_approach_with_descent_and_speed(self, aircraft, start_pos, target_pos, direction, target_speed):
         """
-        Calcule la trajectoire d'approche avec descente progressive ET décélération.
-        
-        Args:
-            aircraft: Instance Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            direction: Direction de l'axe d'approche (vecteur unitaire XY)
-            target_speed: Vitesse cible à atteindre au FAF (km/h)
-            
-        Returns:
-            tuple: (trajectory [N x 3], speed_profile [N])
+        Trajectoire d'approche avec descente progressive (palier, transition, descente linéaire)
+        ET décélération simultanée de la vitesse initiale vers la vitesse d'approche.
         """
         # Distance horizontale
         horizontal_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
@@ -1505,88 +1229,10 @@ class TrajectoryCalculator:
         
         return trajectory, speed_profile
     
-    def _calculate_approach_with_descent(self, aircraft, start_pos, target_pos, direction):
-        """
-        Calcule la trajectoire d'approche avec descente progressive.
-        
-        Args:
-            aircraft: Instance Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            direction: Direction de l'axe d'approche (vecteur unitaire XY)
-            
-        Returns:
-            numpy array: Points de la trajectoire [N x 3]
-        """
-        # Distance horizontale
-        horizontal_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
-        altitude_diff = target_pos[2] - start_pos[2]
-        
-        # Si pas de descente nécessaire ou montée
-        if altitude_diff >= 0:
-            # Ligne droite simple
-            n_points = max(int(horizontal_distance * 50), 50)
-            t_values = np.linspace(0, 1, n_points)
-            
-            trajectory = np.zeros((n_points, 3))
-            for i, t in enumerate(t_values):
-                trajectory[i] = start_pos + t * (target_pos - start_pos)
-            
-            return trajectory
-        
-        # Descente nécessaire
-        max_descent_slope_rad = np.radians(aircraft.max_descent_slope)
-        min_descent_distance = abs(altitude_diff / np.tan(max_descent_slope_rad))
-        
-        # Distance de transition
-        transition_distance = max(min(min_descent_distance * 0.15, 3.0), 1.0)
-        
-        if horizontal_distance < min_descent_distance:
-            # Pas assez de distance, descente immédiate
-            level_distance = 0
-        else:
-            # Vol en palier puis descente
-            level_distance = horizontal_distance - min_descent_distance - transition_distance
-            level_distance = max(0, level_distance)
-        
-        # Construire la trajectoire avec ultra-haute densité de points
-        total_points = max(500, int(horizontal_distance * 100))
-        t_values = np.linspace(0, 1, total_points)
-        
-        trajectory = np.zeros((total_points, 3))
-        
-        for i, t in enumerate(t_values):
-            # Position horizontale (interpolation linéaire)
-            current_distance = t * horizontal_distance
-            trajectory[i, :2] = start_pos[:2] + direction * current_distance
-            
-            # Altitude (avec phases)
-            if current_distance < level_distance:
-                # Phase de palier
-                trajectory[i, 2] = start_pos[2]
-            elif current_distance < level_distance + transition_distance:
-                # Phase de transition progressive (cosinus)
-                transition_progress = (current_distance - level_distance) / transition_distance
-                smooth_factor = (1 - np.cos(transition_progress * np.pi)) / 2
-                trajectory[i, 2] = start_pos[2] + smooth_factor * altitude_diff * (transition_distance / min_descent_distance)
-            else:
-                # Phase de descente linéaire
-                descent_distance = current_distance - level_distance - transition_distance
-                trajectory[i, 2] = start_pos[2] + altitude_diff * ((transition_distance + descent_distance) / min_descent_distance)
-        
-        return trajectory
-    
     def _check_slope_feasibility(self, aircraft, start_pos, target_pos):
         """
-        Vérifie si la pente nécessaire pour atteindre le FAF respecte les contraintes
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            
-        Returns:
-            tuple: (is_feasible, required_slope, excess_altitude)
+        Vérifie si la pente directe vers le FAF respecte la pente max autorisée.
+        Calcule l'altitude excédentaire nécessitant des tours en spirale si la pente est trop forte.
         """
         # Distance horizontale directe
         horizontal_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
@@ -1611,17 +1257,9 @@ class TrajectoryCalculator:
     
     def _calculate_altitude_reduction_turns(self, aircraft, start_pos, target_pos, excess_altitude, cylinders=None):
         """
-        Calcule des tours en spirale pour réduire l'altitude excédentaire avec évitement d'obstacles
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            excess_altitude: Altitude excédentaire à perdre via des tours
-            cylinders: Liste des obstacles à éviter
-            
-        Returns:
-            tuple: (spiral_trajectory, final_position)
+        Génère des tours en spirale pour perdre l'altitude excédentaire avec évitement d'obstacles.
+        Calcule le nombre de tours nécessaires, trouve un centre sûr, génère la spirale avec transitions
+        douces et vérifie les collisions.
         """
         if cylinders is None:
             cylinders = []
@@ -1720,15 +1358,8 @@ class TrajectoryCalculator:
     
     def _adjust_turn_radius_for_obstacles(self, base_radius, start_pos, cylinders):
         """
-        Ajuste le rayon de virage pour éviter les obstacles proches
-        
-        Args:
-            base_radius: Rayon de virage minimum de l'avion
-            start_pos: Position de départ
-            cylinders: Liste des obstacles
-            
-        Returns:
-            float: Rayon ajusté
+        Augmente le rayon de virage si des obstacles sont proches pour maintenir la distance
+        de sécurité. Limite l'augmentation à 50% du rayon de base.
         """
         if not cylinders:
             return base_radius
@@ -1751,16 +1382,8 @@ class TrajectoryCalculator:
     
     def _verify_spiral_clearance(self, center, radius, altitude, cylinders):
         """
-        Vérifie que la spirale complète évite tous les obstacles
-        
-        Args:
-            center: Centre de la spirale
-            radius: Rayon de la spirale
-            altitude: Altitude de vol approximative
-            cylinders: Liste des obstacles
-            
-        Returns:
-            bool: True si la spirale est sûre
+        Vérifie que la spirale (cercle de rayon donné centré en 'center') ne traverse aucun
+        obstacle en comparant les distances centre-obstacle avec les rayons requis.
         """
         for cylinder in cylinders:
             if altitude <= cylinder['height'] + 0.5:  # Marge verticale
@@ -1775,16 +1398,8 @@ class TrajectoryCalculator:
     
     def _find_alternative_spiral_center(self, start_pos, target_pos, turn_radius, cylinders):
         """
-        Trouve un centre de spirale alternatif éloigné de tous les obstacles
-        
-        Args:
-            start_pos: Position de départ
-            target_pos: Position cible
-            turn_radius: Rayon de virage
-            cylinders: Liste des obstacles
-            
-        Returns:
-            numpy array: Position alternative du centre
+        Recherche par grille radiale pour trouver le centre de spirale le plus éloigné de tous
+        les obstacles (maximise la distance minimale aux obstacles).
         """
         # Calculer le point le plus éloigné de tous les obstacles
         best_center = start_pos[:2] + np.array([turn_radius * 2, 0])  # Position par défaut
@@ -1818,16 +1433,8 @@ class TrajectoryCalculator:
     
     def _emergency_spiral_positioning(self, start_pos, target_pos, turn_radius, cylinders):
         """
-        Positionnement d'urgence pour spirale en cas de collision
-        
-        Args:
-            start_pos: Position de départ
-            target_pos: Position cible
-            turn_radius: Rayon de virage
-            cylinders: Liste des obstacles
-            
-        Returns:
-            numpy array: Position d'urgence du centre
+        Positionnement d'urgence : teste 16 directions à 3 distances différentes et choisit
+        la position la plus éloignée des obstacles.
         """
         # Aller le plus loin possible des obstacles
         if not cylinders:
@@ -1855,16 +1462,9 @@ class TrajectoryCalculator:
     
     def _find_safe_spiral_center(self, start_pos, target_pos, turn_radius, cylinders):
         """
-        Trouve un centre de spirale sûr qui évite les obstacles avec analyse détaillée
-        
-        Args:
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible [x, y, z]
-            turn_radius: Rayon de virage
-            cylinders: Liste des obstacles
-            
-        Returns:
-            numpy array: Position du centre de spirale [x, y]
+        Recherche intelligente du meilleur centre de spirale en testant 4 directions (droite, gauche,
+        arrière-droite, arrière-gauche) à distances croissantes. Évalue chaque position avec un score
+        de sécurité basé sur les distances aux obstacles et l'orientation vers le FAF.
         """
         print(f"   🔍 Recherche centre de spirale sûr (rayon: {turn_radius:.3f} km)")
         
@@ -1938,18 +1538,9 @@ class TrajectoryCalculator:
     
     def _evaluate_spiral_center_safety(self, center, turn_radius, cylinders, start_pos, target_pos, base_margin):
         """
-        Évalue la sécurité d'un centre de spirale (score de 0 à 10+)
-        
-        Args:
-            center: Position du centre testé [x, y]
-            turn_radius: Rayon de virage
-            cylinders: Liste des obstacles
-            start_pos: Position de départ
-            target_pos: Position cible
-            base_margin: Marge de sécurité de base
-            
-        Returns:
-            float: Score de sécurité (0 = dangereux, 10+ = excellent)
+        Calcule un score de sécurité (0-10+) pour un centre de spirale : pénalités pour collisions
+        avec obstacles, bonus pour distances de sécurité supplémentaires, proximité raisonnable
+        au point de départ et orientation favorable vers le FAF.
         """
         score = 10.0  # Score de base
         
@@ -2001,18 +1592,8 @@ class TrajectoryCalculator:
     
     def _generate_spiral_trajectory(self, start_pos, spiral_center, turn_radius, num_turns, total_descent, descent_rate):
         """
-        Génère la trajectoire en spirale avec transitions douces et respect des taux de virage
-        
-        Args:
-            start_pos: Position de départ [x, y, z]
-            spiral_center: Centre de la spirale [x, y]
-            turn_radius: Rayon de virage
-            num_turns: Nombre de tours à effectuer
-            total_descent: Altitude totale à perdre
-            descent_rate: Taux de descente en degrés
-            
-        Returns:
-            numpy array: Points de la trajectoire [N x 3]
+        Génère une spirale avec 3 phases (entrée 15%, stable 70%, sortie 15%) et transitions ultra-douces
+        (smoothstep quintic) pour éviter les à-coups. Haute densité de points (720/tour) et lissage final.
         """
         # Angle total à parcourir
         total_angle = num_turns * 2 * np.pi
@@ -2116,14 +1697,8 @@ class TrajectoryCalculator:
     
     def _smooth_transition(self, t):
         """
-        Fonction de transition ultra-douce (smoothstep de degré 5)
-        Garantit des dérivées nulles en 0 et 1 pour éviter les à-coups
-        
-        Args:
-            t: Paramètre de 0 à 1
-            
-        Returns:
-            float: Valeur lissée de 0 à 1
+        Fonction smoothstep de degré 5 : f(t) = 6t⁵ - 15t⁴ + 10t³
+        Garantit dérivées nulles en 0 et 1 pour transitions sans à-coups.
         """
         # Smoothstep de degré 5: f(t) = 6t^5 - 15t^4 + 10t^3
         t = np.clip(t, 0.0, 1.0)
@@ -2131,13 +1706,8 @@ class TrajectoryCalculator:
     
     def _smooth_trajectory(self, trajectory):
         """
-        Applique un lissage final sur la trajectoire pour éliminer les discontinuités
-        
-        Args:
-            trajectory: Trajectoire à lisser [N x 3]
-            
-        Returns:
-            numpy array: Trajectoire lissée
+        Lissage final de l'altitude par moyenne mobile pondérée (25%-50%-25%) pour éliminer
+        les discontinuités résiduelles.
         """
         if len(trajectory) < 3:
             return trajectory
@@ -2155,19 +1725,8 @@ class TrajectoryCalculator:
     
     def calculate_trajectory_with_automatic_turns(self, aircraft, cylinders=None):
         """
-        Calcule la trajectoire avec tours automatiques si la pente nécessaire dépasse le maximum
-        
-        Cette méthode:
-        1. Vérifie si la pente directe vers le FAF est faisable
-        2. Si non, calcule des tours en spirale pour perdre l'altitude excédentaire
-        3. Puis calcule une trajectoire normale vers le FAF
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            cylinders: Liste optionnelle de cylindres (obstacles) à éviter
-            
-        Returns:
-            tuple: (trajectory, parameters)
+        Détecte si la pente directe est trop forte, génère des tours en spirale pour perdre
+        l'altitude excédentaire si nécessaire, puis calcule une trajectoire normale vers le FAF.
         """
         if cylinders is None:
             cylinders = []
@@ -2239,16 +1798,8 @@ class TrajectoryCalculator:
     
     def _calculate_avoidance_waypoints(self, start_2d, end_2d, cylinders, altitude):
         """
-        Calcule les waypoints de contournement pour éviter les obstacles
-        
-        Args:
-            start_2d: Point de départ [x, y]
-            end_2d: Point d'arrivée [x, y]
-            cylinders: Liste de cylindres
-            altitude: Altitude de vol
-            
-        Returns:
-            list: Liste de waypoints [x, y] pour contourner les obstacles
+        Détecte les obstacles sur le segment et génère des waypoints de contournement tangents
+        (approche latérale en longeant le périmètre) pour chaque obstacle traversé.
         """
         waypoints = []
         safety_margin = 0.5  # Marge de sécurité réduite pour longer le cylindre
@@ -2341,17 +1892,8 @@ class TrajectoryCalculator:
     
     def _calculate_avoidance_waypoints_with_margin(self, start_2d, end_2d, cylinders, altitude, safety_factor):
         """
-        Calcule les waypoints de contournement avec une marge de sécurité personnalisée
-        
-        Args:
-            start_2d: Point de départ [x, y]
-            end_2d: Point d'arrivée [x, y]
-            cylinders: Liste de cylindres
-            altitude: Altitude de vol
-            safety_factor: Facteur multiplicatif pour la marge de sécurité (en km)
-            
-        Returns:
-            list: Liste de waypoints [x, y] pour contourner les obstacles
+        Similaire à _calculate_avoidance_waypoints mais avec marge de sécurité personnalisée
+        (utilisé pour recalculs avec marges augmentées en cas de collision).
         """
         waypoints = []
         
@@ -2421,105 +1963,9 @@ class TrajectoryCalculator:
         
         return waypoints
     
-    def _adjust_bezier_control_points_for_obstacles(self, P0, P1, P2, P3, cylinders, altitude):
-        """
-        Ajuste les points de contrôle d'une courbe de Bézier pour contourner les obstacles
-        en longeant leur périmètre de manière tangente
-        
-        Args:
-            P0: Point de départ [x, y]
-            P1: Premier point de contrôle [x, y]
-            P2: Deuxième point de contrôle [x, y]
-            P3: Point d'arrivée [x, y]
-            cylinders: Liste de cylindres
-            altitude: Altitude approximative de la trajectoire
-            
-        Returns:
-            tuple: (P1_adjusted, P2_adjusted)
-        """
-        safety_margin = 0.8  # Marge de sécurité en km
-        
-        P1_adjusted = P1.copy()
-        P2_adjusted = P2.copy()
-        
-        for cylinder in cylinders:
-            cyl_center = np.array([cylinder['x'], cylinder['y']])
-            cyl_radius = cylinder['radius'] + safety_margin
-            
-            # Vérifier si la trajectoire traverse le cylindre
-            # On échantillonne plusieurs points sur la courbe de Bézier pour tester
-            collision_detected = False
-            for t in np.linspace(0, 1, 50):
-                # Position sur la courbe de Bézier avec les points actuels
-                bezier_point = (1-t)**3 * P0 + 3*(1-t)**2*t * P1_adjusted + 3*(1-t)*t**2 * P2_adjusted + t**3 * P3
-                dist = np.linalg.norm(bezier_point - cyl_center)
-                if dist < cyl_radius and altitude <= cylinder['height']:
-                    collision_detected = True
-                    break
-            
-            if collision_detected:
-                print(f"   🚧 Collision détectée avec cylindre - calcul contournement tangent")
-                
-                # Calculer les points d'entrée et de sortie tangents au cylindre
-                # Direction de P0 vers P3 (direction générale de la trajectoire)
-                traj_direction = P3 - P0
-                traj_direction = traj_direction / np.linalg.norm(traj_direction)
-                
-                # Vecteur perpendiculaire (pour contourner)
-                perp_direction = np.array([-traj_direction[1], traj_direction[0]])
-                
-                # Déterminer de quel côté contourner (gauche ou droite)
-                # On choisit le côté le plus proche de la trajectoire initiale
-                to_P1 = P1_adjusted - cyl_center
-                side = np.sign(np.dot(to_P1, perp_direction))
-                if side == 0:
-                    side = 1  # Par défaut, contourner à droite
-                
-                # Points de tangence pour un contournement lisse
-                # Point d'entrée : avant le cylindre, tangent au cercle
-                vec_to_start = P0 - cyl_center
-                dist_start = np.linalg.norm(vec_to_start)
-                
-                if dist_start > 0.1:
-                    # Angle d'approche
-                    angle_start = np.arctan2(vec_to_start[1], vec_to_start[0])
-                    # Point de tangence d'entrée (30-45° autour du cylindre)
-                    tangent_angle_in = angle_start + side * np.pi / 6  # 30° décalage
-                    P1_adjusted = cyl_center + cyl_radius * np.array([
-                        np.cos(tangent_angle_in), 
-                        np.sin(tangent_angle_in)
-                    ])
-                    print(f"   ↪️  P1 ajusté (entrée tangente): ({P1_adjusted[0]:.1f}, {P1_adjusted[1]:.1f})")
-                
-                # Point de sortie : après le cylindre, tangent au cercle
-                vec_to_end = P3 - cyl_center
-                dist_end = np.linalg.norm(vec_to_end)
-                
-                if dist_end > 0.1:
-                    # Angle de sortie
-                    angle_end = np.arctan2(vec_to_end[1], vec_to_end[0])
-                    # Point de tangence de sortie (30-45° autour du cylindre)
-                    tangent_angle_out = angle_end - side * np.pi / 6  # 30° décalage opposé
-                    P2_adjusted = cyl_center + cyl_radius * np.array([
-                        np.cos(tangent_angle_out), 
-                        np.sin(tangent_angle_out)
-                    ])
-                    print(f"   ↩️  P2 ajusté (sortie tangente): ({P2_adjusted[0]:.1f}, {P2_adjusted[1]:.1f})")
-                
-                print(f"   ✅ Contournement tangent calculé (côté: {'droite' if side > 0 else 'gauche'})")
-        
-        return P1_adjusted, P2_adjusted
-    
     def _check_collision_with_cylinder(self, point, cylinder):
         """
-        Vérifie si un point est en collision avec un cylindre
-        
-        Args:
-            point: Position [x, y, z]
-            cylinder: Dict avec 'x', 'y', 'radius', 'height'
-            
-        Returns:
-            bool: True si collision
+        Teste si un point 3D est à l'intérieur d'un cylindre (distance horizontale ≤ rayon ET altitude ≤ hauteur).
         """
         # Distance horizontale au centre du cylindre
         dx = point[0] - cylinder['x']
@@ -2532,14 +1978,8 @@ class TrajectoryCalculator:
     
     def _check_trajectory_collision(self, trajectory, cylinders):
         """
-        Vérifie si une trajectoire traverse des cylindres
-        
-        Args:
-            trajectory: Array numpy [N x 3]
-            cylinders: Liste de dict avec 'x', 'y', 'radius', 'height'
-            
-        Returns:
-            tuple: (has_collision, colliding_cylinders, first_collision_index)
+        Parcourt toute la trajectoire et détecte les collisions avec les cylindres.
+        Retourne la liste des cylindres en collision et l'index du premier point de collision.
         """
         if not cylinders:
             return False, [], -1
@@ -2559,16 +1999,10 @@ class TrajectoryCalculator:
     
     def _calculate_avoidance_point(self, start_pos, target_pos, cylinder, safety_margin=0.5):
         """
-        Calcule un point de contournement pour éviter un cylindre
-        
-        Args:
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible [x, y, z]
-            cylinder: Dict avec 'x', 'y', 'radius', 'height'
-            safety_margin: Marge de sécurité en km
-            
-        Returns:
-            numpy array: Point de contournement [x, y, z]
+        Génère un point de contournement latéral autour d'un obstacle cylindrique.
+        Projette le segment sur le cylindre, trouve le point le plus proche, puis crée
+        un waypoint à l'extérieur du rayon élargi (rayon + marge). L'altitude est ajustée
+        pour rester au-dessus de l'obstacle si nécessaire.
         """
         cyl_center = np.array([cylinder['x'], cylinder['y']])
         cyl_radius = cylinder['radius'] + safety_margin

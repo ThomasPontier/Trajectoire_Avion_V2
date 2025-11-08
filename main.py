@@ -118,9 +118,8 @@ class FlightSimulatorGUI:
                     # Cela aide Windows 10/11 à identifier correctement l'application
                     myappid = 'estaca.trajectoireavion.simulateur.v1'
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-                    print(f"✅ AppUserModelID défini pour Windows")
                 except Exception as e:
-                    print(f"⚠️  Impossible de définir AppUserModelID: {e}")
+                    pass
             
             # Méthode 1: Utiliser .ico avec iconbitmap (Windows)
             if sys.platform == 'win32' and os.path.exists(ico_path):
@@ -128,10 +127,9 @@ class FlightSimulatorGUI:
                     # Utiliser le chemin absolu
                     abs_ico_path = os.path.abspath(ico_path)
                     self.root.iconbitmap(default=abs_ico_path)
-                    print(f"✅ Icône .ico chargée depuis: {abs_ico_path}")
                     icon_loaded = True
                 except Exception as e:
-                    print(f"⚠️  Erreur avec iconbitmap .ico: {e}")
+                    pass
             
             # Méthode 2: Utiliser PNG avec iconphoto (multiplateforme)
             if os.path.exists(png_path):
@@ -152,13 +150,9 @@ class FlightSimulatorGUI:
                     # Garder les références pour éviter le garbage collection
                     self.root._icon_photos = photos
                     
-                    if not icon_loaded:
-                        print(f"✅ Logo PNG chargé depuis: {png_path}")
-                    else:
-                        print(f"✅ Logo PNG également défini pour compatibilité")
                     icon_loaded = True
                 except Exception as e:
-                    print(f"⚠️  Erreur avec iconphoto PNG: {e}")
+                    pass
             
             if not icon_loaded:
                 print("⚠️  Aucun logo trouvé ou chargé (.ico ou .png)")
@@ -169,7 +163,7 @@ class FlightSimulatorGUI:
             traceback.print_exc()
     
     def _on_closing(self):
-        """Gestionnaire de fermeture de la fenêtre - sauvegarde la configuration"""
+        """Gestionnaire de fermeture de la fenêtre"""
         try:
             # Sauvegarder la configuration avant de fermer
             self._save_config()
@@ -255,13 +249,21 @@ class FlightSimulatorGUI:
         def _on_mousewheel(event):
             aircraft_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
-        # Bind des événements de défilement
-        aircraft_canvas.bind("<MouseWheel>", _on_mousewheel)
-        aircraft_canvas.bind("<Button-4>", lambda e: aircraft_canvas.yview_scroll(-1, "units"))  # Linux
-        aircraft_canvas.bind("<Button-5>", lambda e: aircraft_canvas.yview_scroll(1, "units"))   # Linux
+        def _bind_to_mousewheel(event):
+            aircraft_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        def _unbind_from_mousewheel(event):
+            aircraft_canvas.unbind_all("<MouseWheel>")
+        
+        # Bind/unbind mousewheel quand la souris entre/sort de la zone
+        aircraft_canvas.bind('<Enter>', _bind_to_mousewheel)
+        aircraft_canvas.bind('<Leave>', _unbind_from_mousewheel)
+        
+        # Bind des événements de défilement pour Linux
+        aircraft_canvas.bind("<Button-4>", lambda e: aircraft_canvas.yview_scroll(-1, "units"))
+        aircraft_canvas.bind("<Button-5>", lambda e: aircraft_canvas.yview_scroll(1, "units"))
         
         # Permettre le focus sur le canvas pour les touches du clavier
-        aircraft_canvas.focus_set()
         aircraft_canvas.bind("<Up>", lambda e: aircraft_canvas.yview_scroll(-1, "units"))
         aircraft_canvas.bind("<Down>", lambda e: aircraft_canvas.yview_scroll(1, "units"))
         aircraft_canvas.bind("<Prior>", lambda e: aircraft_canvas.yview_scroll(-10, "units"))  # Page Up
@@ -593,23 +595,6 @@ class FlightSimulatorGUI:
                    command=self._clear_cylinders).pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
         row += 1
 
-        # Séparateur
-        ttk.Separator(scrollable_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
-        row += 1
-
-        # Section: Sauvegarde/Chargement
-        ttk.Label(scrollable_frame, text="💾 Sauvegarde & Chargement",
-                  font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
-
-        save_buttons_frame = ttk.Frame(scrollable_frame)
-        save_buttons_frame.grid(row=row, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
-
-        ttk.Button(save_buttons_frame, text="💾 Sauvegarder Configuration",
-                   command=self._save_config).pack(fill=tk.X, pady=2)
-        ttk.Button(save_buttons_frame, text="📂 Charger Configuration",
-                   command=self._load_config).pack(fill=tk.X, pady=2)
-
         # Initialiser la liste des cylindres avec la config par défaut
         self.cylinders = [dict(c) for c in DEFAULT_CONFIG.get("cylinders", [])]
         
@@ -679,29 +664,26 @@ class FlightSimulatorGUI:
         row += 1
         
         # Séparateur
-        ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15)
+        ttk.Separator(control_frame, orient='horizontal').grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
         row += 1
         
-        # Options de trajectoire
-        ttk.Label(control_frame, text="Options Trajectoire", font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        # Section Pentes
+        ttk.Label(control_frame, text="Pentes de Vol", font=('Arial', 10, 'bold')).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
         row += 1
         
-        self.use_realistic_turns_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(control_frame, text="Virages réalistes (rejoindre axe d'approche)", 
-                       variable=self.use_realistic_turns_var).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
+        # Pente maximale de montée
+        ttk.Label(control_frame, text="Pente max montée (°):").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.max_climb_slope_var = tk.DoubleVar(value=15.0)  # Valeur par défaut commercial
+        ttk.Entry(control_frame, textvariable=self.max_climb_slope_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
-        ttk.Label(control_frame, text="Active le calcul de trajectoire avec virages\nrespectant le rayon de courbure minimum", 
-                 font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
+        # Pente maximale de descente
+        ttk.Label(control_frame, text="Pente max descente (°):").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.max_descent_slope_var = tk.DoubleVar(value=-3.0)  # Valeur par défaut commercial
+        ttk.Entry(control_frame, textvariable=self.max_descent_slope_var, width=15).grid(row=row, column=1, pady=5)
         row += 1
         
-        # Option tours automatiques pour pente excessive
-        self.use_automatic_turns_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(control_frame, text="Tours automatiques (éviter pente excessive)", 
-                       variable=self.use_automatic_turns_var).grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=5)
-        row += 1
-        
-        ttk.Label(control_frame, text="Active des tours en spirale si la pente nécessaire\ndépasse l'angle maximum autorisé", 
+        ttk.Label(control_frame, text="Le type d'avion définit des valeurs par défaut", 
                  font=('Arial', 7, 'italic'), foreground='gray').grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
         row += 1
         
@@ -869,14 +851,14 @@ class FlightSimulatorGUI:
             self._draw_environment()
             self._draw_config_preview()  # Mettre à jour la preview de configuration
             
+            # Sauvegarde automatique
+            self._save_config()
+            
             # Message de succès
             self.env_info_label.config(
                 text="✅ Configuration appliquée avec succès!",
                 foreground='green'
             )
-            
-            # Sauvegarde automatique
-            self._save_config()
             
             messagebox.showinfo("Succès", 
                               f"Environnement configuré:\n\n"
@@ -923,11 +905,9 @@ class FlightSimulatorGUI:
                         'z': self.altitude_var.get()
                     },
                     'speed': self.speed_var.get(),
-                    'heading': self.heading_var.get()
-                },
-                'options': {
-                    'use_realistic_turns': self.use_realistic_turns_var.get(),
-                    'use_automatic_turns': self.use_automatic_turns_var.get()
+                    'heading': self.heading_var.get(),
+                    'max_climb_slope': self.max_climb_slope_var.get() if hasattr(self, 'max_climb_slope_var') else None,
+                    'max_descent_slope': self.max_descent_slope_var.get() if hasattr(self, 'max_descent_slope_var') else None
                 },
                 'simulation': {
                     'num_trajectories': self.num_trajectories_var.get()
@@ -936,22 +916,16 @@ class FlightSimulatorGUI:
             
             # Déterminer le répertoire de l'application
             if getattr(sys, 'frozen', False):
-                # Application empaquetée avec PyInstaller
                 script_dir = os.path.dirname(sys.executable)
             else:
-                # Script Python normal
                 script_dir = os.path.dirname(os.path.abspath(__file__))
             
             config_file = os.path.join(script_dir, 'config.json')
             with open(config_file, 'w', encoding='utf-8') as f:
                 json.dump(config, f, indent=4, ensure_ascii=False)
             
-            # Pas de message pour la sauvegarde automatique
-            # messagebox.showinfo("Succès", f"Configuration sauvegardée dans:\n{config_file}")
-            
         except Exception as e:
-            print(f"Erreur de sauvegarde: {e}")
-            # Ne pas afficher de popup d'erreur pour éviter de bloquer l'interface
+            print(f"⚠️  Erreur de sauvegarde: {e}")
     
     def _load_config_on_startup(self):
         """Charge silencieusement la configuration au démarrage"""
@@ -1046,12 +1020,16 @@ class FlightSimulatorGUI:
             self.speed_var.set(aircraft.get('speed', DEFAULT_CONFIG['aircraft']['speed']))
             self.heading_var.set(aircraft.get('heading', DEFAULT_CONFIG['aircraft']['heading']))
             
-            # Charger les options de trajectoire
-            options = config.get('options', {})
-            if hasattr(self, 'use_realistic_turns_var'):
-                self.use_realistic_turns_var.set(options.get('use_realistic_turns', True))
-            if hasattr(self, 'use_automatic_turns_var'):
-                self.use_automatic_turns_var.set(options.get('use_automatic_turns', False))
+            # Charger les pentes personnalisées si elles existent
+            if hasattr(self, 'max_climb_slope_var'):
+                max_climb_slope = aircraft.get('max_climb_slope')
+                if max_climb_slope is not None:
+                    self.max_climb_slope_var.set(max_climb_slope)
+            
+            if hasattr(self, 'max_descent_slope_var'):
+                max_descent_slope = aircraft.get('max_descent_slope')
+                if max_descent_slope is not None:
+                    self.max_descent_slope_var.set(max_descent_slope)
             
             # Charger les paramètres de simulation
             simulation = config.get('simulation', {})
@@ -1061,106 +1039,6 @@ class FlightSimulatorGUI:
         except Exception as e:
             print(f"Erreur lors du chargement de la configuration: {e}")
             # Continuer avec les valeurs par défaut
-    
-    def _load_config(self):
-        """Charge la configuration depuis le fichier JSON (avec message utilisateur)"""
-        import json
-        import os
-        import sys
-        
-        try:
-            # Déterminer le répertoire de l'application
-            if getattr(sys, 'frozen', False):
-                # Application empaquetée avec PyInstaller
-                script_dir = os.path.dirname(sys.executable)
-            else:
-                # Script Python normal
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-            
-            config_file = os.path.join(script_dir, 'config.json')
-
-            config = None
-            source_info = None
-            if os.path.exists(config_file):
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                source_info = config_file
-            else:
-                # Fallback: tenter le config embarqué (première exécution possible)
-                if getattr(sys, 'frozen', False):
-                    meipass_dir = getattr(sys, '_MEIPASS', None)
-                    if meipass_dir:
-                        packaged_cfg = os.path.join(meipass_dir, 'config.json')
-                        if os.path.exists(packaged_cfg):
-                            with open(packaged_cfg, 'r', encoding='utf-8') as f:
-                                config = json.load(f)
-                            source_info = packaged_cfg
-                            # Copier vers le dossier utilisateur pour persistance
-                            try:
-                                with open(config_file, 'w', encoding='utf-8') as out:
-                                    json.dump(config, out, indent=4, ensure_ascii=False)
-                            except Exception as copy_err:
-                                print(f"⚠️  Impossible d'écrire config par défaut à {config_file}: {copy_err}")
-
-            if not config:
-                messagebox.showinfo("Info", "Aucune configuration sauvegardée trouvée")
-                return
-            
-            # Charger l'environnement
-            env = config.get('environment', {})
-            self.env_size_x_var.set(env.get('size_x', 50))
-            self.env_size_y_var.set(env.get('size_y', 50))
-            self.env_size_z_var.set(env.get('size_z', 5))
-            
-            airport = env.get('airport', {})
-            self.airport_x_var.set(airport.get('x', 25))
-            self.airport_y_var.set(airport.get('y', 25))
-            self.airport_z_var.set(airport.get('z', 0))
-            
-            faf = env.get('faf', {})
-            self.faf_x_var.set(faf.get('x', 15))
-            self.faf_y_var.set(faf.get('y', 15))
-            self.faf_z_var.set(faf.get('z', 1.5))
-            
-            # Charger les cylindres
-            self.cylinders = config.get('cylinders', [])
-            self._update_cylinders_list()
-            
-            # Charger l'avion
-            aircraft = config.get('aircraft', {})
-            self.aircraft_type_var.set(aircraft.get('type', 'commercial'))
-            
-            position = aircraft.get('position', {})
-            self.pos_x_var.set(position.get('x', 0))
-            self.pos_y_var.set(position.get('y', 0))
-            self.altitude_var.set(position.get('z', 3))
-            
-            self.speed_var.set(aircraft.get('speed', 250))
-            self.heading_var.set(aircraft.get('heading', 90))
-            
-            # Charger les options de trajectoire
-            options = config.get('options', {})
-            if hasattr(self, 'use_realistic_turns_var'):
-                self.use_realistic_turns_var.set(options.get('use_realistic_turns', True))
-            if hasattr(self, 'use_automatic_turns_var'):
-                self.use_automatic_turns_var.set(options.get('use_automatic_turns', False))
-            
-            # Charger les paramètres de simulation
-            simulation = config.get('simulation', {})
-            if hasattr(self, 'num_trajectories_var'):
-                self.num_trajectories_var.set(simulation.get('num_trajectories', 10))
-                self._update_button_text()  # Mettre à jour le texte du bouton
-            
-            # Appliquer la configuration de l'environnement
-            self._apply_environment_config()
-            
-            messagebox.showinfo("Succès", f"Configuration chargée depuis:\n{source_info}\n\n"
-                                         f"Environnement: {self.env_size_x_var.get()}x{self.env_size_y_var.get()}x{self.env_size_z_var.get()} km\n"
-                                         f"Cylindres: {len(self.cylinders)}\n"
-                                         f"Type d'avion: {self.aircraft_type_var.get()}")
-            
-        except Exception as e:
-            messagebox.showerror("Erreur de chargement", f"Impossible de charger la configuration:\n{str(e)}")
     
     def _add_cylinder(self):
         """Ajoute un cylindre (obstacle) à l'environnement"""
@@ -1294,84 +1172,71 @@ class FlightSimulatorGUI:
                 self.cylinders_listbox.insert(tk.END, 
                     f"#{i}: X={cyl['x']:.1f} Y={cyl['y']:.1f} R={cyl['radius']:.1f} H={cyl['height']:.1f}")
         
-    def _draw_config_preview(self):
-        """Dessine la prévisualisation 3D dans l'onglet Configuration"""
-        
+    def _setup_3d_axis(self, ax, title="", label_size=10):
+        """Configure un axe 3D avec les paramètres de base de l'environnement"""
+        if self.environment is None:
+            return
+        ax.clear()
+        ax.set_xlim(0, self.environment.size_x)
+        ax.set_ylim(0, self.environment.size_y)
+        ax.set_zlim(0, self.environment.size_z)
+        ax.set_box_aspect([self.environment.size_x, self.environment.size_y, self.environment.size_z])
+        if label_size > 0:
+            ax.set_xlabel('X (km)', fontsize=label_size)
+            ax.set_ylabel('Y (km)', fontsize=label_size)
+            ax.set_zlabel('Z (km)', fontsize=label_size)
+        if title:
+            ax.set_title(title, fontsize=label_size+2, fontweight='bold' if label_size >= 10 else 'normal')
+    
+    def _draw_basic_elements(self, ax, draw_aircraft=True, draw_direction_arrow=True):
+        """Dessine les éléments de base: aéroport, FAF, axe, avion"""
         if self.environment is None:
             return
         
-        self.ax_3d_config.clear()
-        
-        # Configuration de l'affichage
-        self.ax_3d_config.set_xlim(0, self.environment.size_x)
-        self.ax_3d_config.set_ylim(0, self.environment.size_y)
-        self.ax_3d_config.set_zlim(0, self.environment.size_z)
-        
-        # Configuration de l'aspect ratio pour avoir une vue à l'échelle
-        self.ax_3d_config.set_box_aspect([
-            self.environment.size_x, 
-            self.environment.size_y, 
-            self.environment.size_z
-        ])
-        
-        self.ax_3d_config.set_xlabel('X (km)', fontsize=8)
-        self.ax_3d_config.set_ylabel('Y (km)', fontsize=8)
-        self.ax_3d_config.set_zlabel('Z (km)', fontsize=8)
-        
-        # Dessiner l'aéroport
         airport = self.environment.airport_position
-        self.ax_3d_config.scatter([airport[0]], [airport[1]], [airport[2]], 
-                          c='red', marker='s', s=150, label='Aéroport')
-        
-        # Dessiner le point FAF
         faf = self.environment.faf_position
-        self.ax_3d_config.scatter([faf[0]], [faf[1]], [faf[2]], 
-                          c='blue', marker='^', s=100, label='Point FAF')
+        ax.scatter([airport[0]], [airport[1]], [airport[2]], 
+                  c='red', marker='s', s=150, label='Aéroport')
+        ax.scatter([faf[0]], [faf[1]], [faf[2]], 
+                  c='blue', marker='^', s=100, label='Point FAF')
         
-        # Dessiner l'axe d'approche
+        # Axe d'approche
         direction = faf - airport
         direction_norm = np.linalg.norm(direction[:2])
-        
         if direction_norm > 0:
             direction_unit = direction / direction_norm
             max_distance = max(self.environment.size_x, self.environment.size_y) * 2
             end_point = airport + direction_unit * max_distance
-            
-            self.ax_3d_config.plot([airport[0], end_point[0]], 
-                           [airport[1], end_point[1]], 
-                           [airport[2], end_point[2]], 
-                           'k--', linewidth=1, alpha=0.5, label='Axe d\'approche')
+            ax.plot([airport[0], end_point[0]], [airport[1], end_point[1]], 
+                   [airport[2], end_point[2]], 'k--', linewidth=1, alpha=0.5, label='Axe d\'approche')
         
-        # Si l'avion est positionné
-        if self.aircraft:
-            self.ax_3d_config.scatter([self.aircraft.position[0]], [self.aircraft.position[1]], 
-                             [self.aircraft.position[2]], c='green', marker='o', s=80, 
-                             label='Avion')
-            
-            # Dessiner un vecteur montrant la direction de l'avion
-            heading_rad = np.radians(self.aircraft.heading)
-            direction_length = min(self.environment.size_x, self.environment.size_y) * 0.08
-            dx = direction_length * np.sin(heading_rad)
-            dy = direction_length * np.cos(heading_rad)
-            
-            self.ax_3d_config.quiver(self.aircraft.position[0], self.aircraft.position[1], 
-                            self.aircraft.position[2], dx, dy, 0, 
-                            color='green', arrow_length_ratio=0.3, linewidth=1.5, alpha=0.7)
+        # Avion
+        if draw_aircraft and self.aircraft:
+            ax.scatter([self.aircraft.position[0]], [self.aircraft.position[1]], 
+                      [self.aircraft.position[2]], c='green', marker='o', s=80, label='Avion')
+            if draw_direction_arrow:
+                heading_rad = np.radians(self.aircraft.heading)
+                direction_length = min(self.environment.size_x, self.environment.size_y) * 0.08
+                dx = direction_length * np.sin(heading_rad)
+                dy = direction_length * np.cos(heading_rad)
+                ax.quiver(self.aircraft.position[0], self.aircraft.position[1], 
+                         self.aircraft.position[2], dx, dy, 0, 
+                         color='green', arrow_length_ratio=0.3, linewidth=1.5, alpha=0.7)
+    
+    def _draw_config_preview(self):
+        """Dessine la prévisualisation 3D dans l'onglet Configuration"""
+        self._setup_3d_axis(self.ax_3d_config, "Configuration de l'Environnement", 8)
+        self._draw_basic_elements(self.ax_3d_config)
         
-        # Dessiner les cylindres (obstacles)
+        # Dessiner les cylindres
         if hasattr(self, 'cylinders') and self.cylinders:
             for cyl in self.cylinders:
                 self._draw_cylinder_on_ax(self.ax_3d_config, cyl['x'], cyl['y'], 
                                          cyl['radius'], cyl['height'])
-            
-            # Ajouter une entrée de légende pour les cylindres
             self.ax_3d_config.plot([], [], [], 'r-', linewidth=2, alpha=0.5, 
                           label=f'Cylindres ({len(self.cylinders)})')
         
-        # Légende
         self.ax_3d_config.legend(loc='upper right', fontsize=7, framealpha=0.8)
-        self.ax_3d_config.set_title("Configuration de l'Environnement", fontsize=10, fontweight='bold')
-        
         self.canvas_3d_config.draw()
     
     def _draw_environment(self):
@@ -1387,68 +1252,42 @@ class FlightSimulatorGUI:
         self.ax_3d.set_ylim(0, self.environment.size_y)
         self.ax_3d.set_zlim(0, self.environment.size_z)
         
-        # Configuration de l'aspect ratio pour avoir une vue à l'échelle
-        self.ax_3d.set_box_aspect([
-            self.environment.size_x, 
-            self.environment.size_y, 
-            self.environment.size_z
-        ])
+    def _draw_environment(self):
+        """Dessine l'environnement 3D"""
+        if self.environment is None:
+            return
         
-        self.ax_3d.set_xlabel('')
-        self.ax_3d.set_ylabel('')
-        self.ax_3d.set_zlabel('')
-        
-        # Désactiver les valeurs sur les axes
+        self._setup_3d_axis(self.ax_3d, "Espace Aérien 3D - Version 1.1+ (Trajectoire Lissée)", 0)
         self.ax_3d.set_xticklabels([])
         self.ax_3d.set_yticklabels([])
         self.ax_3d.set_zticklabels([])
         
-        # Dessiner l'aéroport
+        # Dessiner éléments de base (taille markers plus grande pour vue principale)
         airport = self.environment.airport_position
+        faf = self.environment.faf_position
         self.ax_3d.scatter([airport[0]], [airport[1]], [airport[2]], 
                           c='red', marker='s', s=200, label='Aéroport')
-        
-        # Dessiner le point FAF
-        faf = self.environment.faf_position
         self.ax_3d.scatter([faf[0]], [faf[1]], [faf[2]], 
                           c='blue', marker='^', s=150, label='Point FAF')
         
-        # Dessiner l'axe d'approche (demi-droite partant de l'aéroport et passant par le FAF)
-        # Calculer le vecteur directeur de l'aéroport vers le FAF
+        # Axe d'approche
         direction = faf - airport
-        direction_norm = np.linalg.norm(direction[:2])  # Norme dans le plan XY
-        
+        direction_norm = np.linalg.norm(direction[:2])
         if direction_norm > 0:
-            # Normaliser le vecteur directeur
             direction_unit = direction / direction_norm
-            
-            # Prolonger la demi-droite au-delà du FAF (jusqu'à la limite de l'espace)
-            # Calculer la distance max possible dans cette direction
             max_distance = max(self.environment.size_x, self.environment.size_y) * 2
-            
-            # Point de départ : aéroport
-            # Point d'arrivée : prolongement au-delà du FAF
             end_point = airport + direction_unit * max_distance
-            
-            # Tracer la demi-droite en pointillés noirs
-            self.ax_3d.plot([airport[0], end_point[0]], 
-                           [airport[1], end_point[1]], 
-                           [airport[2], end_point[2]], 
-                           'k--', linewidth=1.5, alpha=0.6, label='Axe d\'approche')
+            self.ax_3d.plot([airport[0], end_point[0]], [airport[1], end_point[1]], 
+                           [airport[2], end_point[2]], 'k--', linewidth=1.5, alpha=0.6, label='Axe d\'approche')
         
-        # Si l'avion est positionné
+        # Avion avec flèche direction plus grande
         if self.aircraft:
             self.ax_3d.scatter([self.aircraft.position[0]], [self.aircraft.position[1]], 
-                             [self.aircraft.position[2]], c='green', marker='o', s=100, 
-                             label='Avion')
-            
-            # Dessiner un vecteur montrant la direction de l'avion
+                             [self.aircraft.position[2]], c='green', marker='o', s=100, label='Avion')
             heading_rad = np.radians(self.aircraft.heading)
-            # Direction: sin(heading) pour X (Est), cos(heading) pour Y (Nord)
             direction_length = min(self.environment.size_x, self.environment.size_y) * 0.1
             dx = direction_length * np.sin(heading_rad)
             dy = direction_length * np.cos(heading_rad)
-            
             self.ax_3d.quiver(self.aircraft.position[0], self.aircraft.position[1], self.aircraft.position[2],
                             dx, dy, 0, color='green', arrow_length_ratio=0.3, linewidth=2, alpha=0.7)
         
@@ -1727,9 +1566,7 @@ class FlightSimulatorGUI:
                          edgecolor='black', fancybox=True, shadow=True)
         self.ax_3d.set_title("Espace Aérien 3D - Version 1.1+ (Trajectoire Lissée)", pad=20)
         
-        print(f"🖼️  Rafraîchissement du canvas 3D...")
         self.canvas_3d.draw()
-        print(f"✅ Canvas 3D rafraîchi!\n")
         
         # Dessiner aussi les vues 2D
         self._draw_2d_views()
@@ -1892,9 +1729,7 @@ class FlightSimulatorGUI:
         if handles:
             self.ax_legend.legend(handles, labels, loc='center', fontsize=10, framealpha=0.9)
         
-        print(f"🖼️  Rafraîchissement des vues 2D...")
         self.canvas_2d.draw()
-        print(f"✅ Vues 2D rafraîchies!\n")
     
     def _draw_spiral_trajectory_2d(self):
         """Dessine une trajectoire avec spirales de manière visible dans les vues 2D"""
@@ -2114,31 +1949,22 @@ class FlightSimulatorGUI:
         
         ax2.legend(fontsize=7)
         
-        # Graphique 3: Vitesse
-        ax3 = self.fig_params.add_subplot(2, 2, 3)
-        ax3.plot(time, speed, 'g-', linewidth=2, label='Vitesse')
-        ax3.set_xlabel('Temps (s)', fontsize=9)
-        ax3.set_ylabel('Vitesse (km/h)', fontsize=9)
-        ax3.set_title('Vitesse au cours du temps', fontsize=10, fontweight='bold')
-        ax3.grid(True, alpha=0.3)
-        ax3.legend(fontsize=8)
-        
-        # Graphique 4: Angle de virage (taux de virage) - NOUVEAU
+        # Graphique 3: Angle de virage (taux de virage)
         if turn_rate is not None:
-            ax4 = self.fig_params.add_subplot(2, 2, 4)
-            ax4.plot(time, turn_rate, 'purple', linewidth=2, label='Taux de virage')
-            ax4.set_xlabel('Temps (s)', fontsize=9)
-            ax4.set_ylabel('Taux de virage (°/s)', fontsize=9)
-            ax4.set_title('Angle de Virage (Plan XY)', fontsize=10, fontweight='bold')
-            ax4.grid(True, alpha=0.3)
-            ax4.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+            ax3 = self.fig_params.add_subplot(2, 2, 3)
+            ax3.plot(time, turn_rate, 'purple', linewidth=2, label='Taux de virage')
+            ax3.set_xlabel('Temps (s)', fontsize=9)
+            ax3.set_ylabel('Taux de virage (°/s)', fontsize=9)
+            ax3.set_title('Angle de Virage (Plan XY)', fontsize=10, fontweight='bold')
+            ax3.grid(True, alpha=0.3)
+            ax3.axhline(y=0, color='k', linestyle='--', alpha=0.3)
             
             # Calculer et afficher les statistiques
             max_turn = np.max(np.abs(turn_rate))
             avg_turn = np.mean(np.abs(turn_rate[turn_rate != 0])) if np.any(turn_rate != 0) else 0
             
             stats_text = f'Max: {max_turn:.2f}°/s\nMoy: {avg_turn:.2f}°/s'
-            ax4.text(0.98, 0.97, stats_text, transform=ax4.transAxes,
+            ax3.text(0.98, 0.97, stats_text, transform=ax3.transAxes,
                     verticalalignment='top', horizontalalignment='right',
                     bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5),
                     fontsize=8)
@@ -2147,13 +1973,13 @@ class FlightSimulatorGUI:
             positive_mask = turn_rate > 0.1
             negative_mask = turn_rate < -0.1
             if np.any(positive_mask):
-                ax4.fill_between(time, 0, turn_rate, where=positive_mask, 
+                ax3.fill_between(time, 0, turn_rate, where=positive_mask, 
                                 alpha=0.2, color='blue', label='Virage gauche')
             if np.any(negative_mask):
-                ax4.fill_between(time, 0, turn_rate, where=negative_mask, 
+                ax3.fill_between(time, 0, turn_rate, where=negative_mask, 
                                 alpha=0.2, color='red', label='Virage droite')
             
-            ax4.legend(fontsize=7, loc='upper left')
+            ax3.legend(fontsize=7, loc='upper left')
         
         self.fig_params.tight_layout(pad=2.0)
         self.canvas_params.draw()
@@ -2186,20 +2012,13 @@ class FlightSimulatorGUI:
         ax2.grid(True, alpha=0.3)
         ax2.axhline(y=0, color='k', linestyle='--', alpha=0.3)
         
-        # Graphique 3: Vitesse
+        # Graphique 3: Taux de virage (si disponible)
         ax3 = self.fig_params.add_subplot(2, 2, 3)
         ax3.set_xlabel('Temps (s)', fontsize=9)
-        ax3.set_ylabel('Vitesse (km/h)', fontsize=9)
-        ax3.set_title('Vitesse au cours du temps (Toutes trajectoires)', fontsize=10, fontweight='bold')
+        ax3.set_ylabel('Taux de virage (°/s)', fontsize=9)
+        ax3.set_title('Taux de virage (Toutes trajectoires)', fontsize=10, fontweight='bold')
         ax3.grid(True, alpha=0.3)
-        
-        # Graphique 4: Taux de virage (si disponible)
-        ax4 = self.fig_params.add_subplot(2, 2, 4)
-        ax4.set_xlabel('Temps (s)', fontsize=9)
-        ax4.set_ylabel('Taux de virage (°/s)', fontsize=9)
-        ax4.set_title('Taux de virage (Toutes trajectoires)', fontsize=10, fontweight='bold')
-        ax4.grid(True, alpha=0.3)
-        ax4.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+        ax3.axhline(y=0, color='k', linestyle='--', alpha=0.3)
         
         # Dessiner chaque trajectoire
         for i, params in enumerate(self.multiple_trajectories_params):
@@ -2219,14 +2038,9 @@ class FlightSimulatorGUI:
                 ax2.plot(params['time'], params['slope'], color=color, 
                         linewidth=linewidth, alpha=alpha, label=label)
             
-            # Vitesse
-            if 'time' in params and 'speed' in params:
-                ax3.plot(params['time'], params['speed'], color=color, 
-                        linewidth=linewidth, alpha=alpha, label=label)
-            
             # Taux de virage (si disponible)
             if 'time' in params and 'turn_rate' in params and params['turn_rate'] is not None:
-                ax4.plot(params['time'], params['turn_rate'], color=color, 
+                ax3.plot(params['time'], params['turn_rate'], color=color, 
                         linewidth=linewidth, alpha=alpha, label=label)
         
         # Afficher les limites de pente si l'avion existe
@@ -2241,7 +2055,6 @@ class FlightSimulatorGUI:
             ax1.legend(fontsize=7, loc='best')
             ax2.legend(fontsize=7, loc='best')
             ax3.legend(fontsize=7, loc='best')
-            ax4.legend(fontsize=7, loc='best')
         
         self.fig_params.tight_layout(pad=2.0)
         self.canvas_params.draw()
@@ -2261,6 +2074,12 @@ class FlightSimulatorGUI:
         
         # Mettre à jour la vitesse suggérée
         self.speed_var.set(specs['typical_speed'])
+        
+        # Mettre à jour les pentes par défaut (si les variables existent)
+        if hasattr(self, 'max_climb_slope_var'):
+            self.max_climb_slope_var.set(specs['max_climb_slope'])
+        if hasattr(self, 'max_descent_slope_var'):
+            self.max_descent_slope_var.set(specs['max_descent_slope'])
     
     def _update_button_text(self):
         """Met à jour le texte du bouton de simulations multiples"""
@@ -2308,7 +2127,9 @@ class FlightSimulatorGUI:
                 position=np.array([x, y, z]),
                 speed=speed,
                 heading=heading,
-                aircraft_type=aircraft_type
+                aircraft_type=aircraft_type,
+                max_climb_slope=self.max_climb_slope_var.get(),
+                max_descent_slope=self.max_descent_slope_var.get()
             )
             
             # Réinitialiser la trajectoire
@@ -2347,46 +2168,11 @@ class FlightSimulatorGUI:
             if len(self.cylinders) > 0:
                 print(f"\n🚧 Détection de {len(self.cylinders)} obstacle(s) - activation évitement")
             
-            # Vérifier si tours automatiques pour pente excessive activés
-            if self.use_automatic_turns_var.get():
-                # Trajectoire avec tours automatiques si pente trop forte
-                print("\n🔧 Calcul: Trajectoire avec TOURS AUTOMATIQUES pour pente...")
-                print(f"🛩️  Position avion: ({self.aircraft.position[0]:.1f}, {self.aircraft.position[1]:.1f}, {self.aircraft.position[2]:.1f}) km")
-                print(f"🎯 Position FAF: ({self.environment.faf_position[0]:.1f}, {self.environment.faf_position[1]:.1f}, {self.environment.faf_position[2]:.1f}) km")
-                
-                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_automatic_turns(
-                    self.aircraft, self.cylinders
-                )
-                
-                # Vérifier si la trajectoire a pu être calculée sans collision
-                if self.trajectory is None:
-                    messagebox.showerror("Erreur de Trajectoire", 
-                        "❌ IMPOSSIBLE de calculer une trajectoire sûre!\n\n"
-                        "🚫 Aucune trajectoire ne peut éviter les obstacles depuis cette position.\n"
-                        "💡 Suggestions:\n"
-                        "   • Déplacer l'avion plus loin des obstacles\n"
-                        "   • Réduire la taille des obstacles\n"
-                        "   • Modifier la position FAF ou aéroport")
-                    return
-                
-                # Debug: vérifier les résultats
-                print(f"📦 Résultat - Points trajectoire: {len(self.trajectory)}")
-                print(f"📦 Tours automatiques utilisés: {self.trajectory_params.get('has_altitude_turns', False)}")
-                if self.trajectory_params.get('has_altitude_turns'):
-                    print(f"   🌀 Points de spirale: {self.trajectory_params.get('spiral_points', 0)}")
-                    print(f"   📉 Altitude réduite: {self.trajectory_params.get('excess_altitude_reduced', 0):.2f} km")
-            elif self.use_realistic_turns_var.get():
-                # Trajectoire avec virages réalistes (avec évitement d'obstacles)
-                print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
-                self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(
-                    self.aircraft, self.cylinders
-                )
-            else:
-                # Trajectoire directe avec évitement automatique d'obstacles
-                print("\n🔧 Calcul: Trajectoire DIRECTE...")
-                self.trajectory, self.trajectory_params = calculator.calculate_trajectory(
-                    self.aircraft, self.cylinders
-                )
+            # Trajectoire avec virages réalistes (comportement par défaut)
+            print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
+            self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(
+                self.aircraft, self.cylinders
+            )
             
             print(f"\n📦 Trajectoire calculée: {len(self.trajectory)} points stockés dans self.trajectory")
             print(f"📦 Paramètres stockés: {list(self.trajectory_params.keys())}")
@@ -2588,25 +2374,18 @@ class FlightSimulatorGUI:
                     aircraft_type=getattr(AircraftType, aircraft_type.upper()),
                     position=np.array([x, y, z]),
                     speed=speed,
-                    heading=heading
+                    heading=heading,
+                    max_climb_slope=self.max_climb_slope_var.get() if hasattr(self, 'max_climb_slope_var') else None,
+                    max_descent_slope=self.max_descent_slope_var.get() if hasattr(self, 'max_descent_slope_var') else None
                 )
                 
-                # Calculer la trajectoire
+                # Calculer la trajectoire (utilise toujours virages réalistes par défaut)
                 calculator = TrajectoryCalculator(self.environment)
                 
                 try:
-                    if hasattr(self, 'use_automatic_turns_var') and self.use_automatic_turns_var.get():
-                        trajectory, trajectory_params = calculator.calculate_trajectory_with_automatic_turns(
-                            temp_aircraft, self.cylinders
-                        )
-                    elif hasattr(self, 'use_realistic_turns_var') and self.use_realistic_turns_var.get():
-                        trajectory, trajectory_params = calculator.calculate_trajectory_with_turn(
-                            temp_aircraft, self.cylinders
-                        )
-                    else:
-                        trajectory, trajectory_params = calculator.calculate_trajectory(
-                            temp_aircraft, self.cylinders
-                        )
+                    trajectory, trajectory_params = calculator.calculate_trajectory_with_turn(
+                        temp_aircraft, self.cylinders
+                    )
                     
                     # Vérifier si la trajectoire a pu être calculée sans collision
                     if trajectory is None:
