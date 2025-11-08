@@ -66,6 +66,9 @@ class FlightSimulatorGUI:
         # Variables pour les simulations multiples
         self.multiple_trajectories = []  # Liste des trajectoires multiples
         self.multiple_trajectories_params = []  # Liste des paramètres des trajectoires multiples
+        self.failed_trajectory_positions = []  # Liste des positions où les trajectoires ont échoué
+        self.retry_trajectories = []  # Liste des trajectoires des tentatives de recalcul
+        self.retry_trajectories_info = []  # Information sur chaque tentative de recalcul
         
         # Gérer la fermeture de la fenêtre pour sauvegarder la configuration
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -762,6 +765,13 @@ class FlightSimulatorGUI:
         self.multiple_sim_button = ttk.Button(button_frame, text="10 Simulations Aléatoires", command=self._run_multiple_random_simulations)
         self.multiple_sim_button.pack(fill=tk.X, pady=5)
         ttk.Button(button_frame, text="Effacer Trajectoires Multiples", command=self._clear_multiple_trajectories).pack(fill=tk.X, pady=5)
+        
+        # Variable pour contrôler l'affichage des tentatives de recalcul
+        self.show_retry_trajectories_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(button_frame, text="Afficher tentatives de recalcul", 
+                       variable=self.show_retry_trajectories_var,
+                       command=self._toggle_retry_trajectories_display).pack(fill=tk.X, pady=2)
+        
         ttk.Button(button_frame, text="Réinitialiser", command=self._reset).pack(fill=tk.X, pady=5)
         
         # Mettre à jour la région de scroll après ajout de tous les widgets
@@ -1297,6 +1307,13 @@ class FlightSimulatorGUI:
         self.ax_3d_config.set_ylim(0, self.environment.size_y)
         self.ax_3d_config.set_zlim(0, self.environment.size_z)
         
+        # Configuration de l'aspect ratio pour avoir une vue à l'échelle
+        self.ax_3d_config.set_box_aspect([
+            self.environment.size_x, 
+            self.environment.size_y, 
+            self.environment.size_z
+        ])
+        
         self.ax_3d_config.set_xlabel('X (km)', fontsize=8)
         self.ax_3d_config.set_ylabel('Y (km)', fontsize=8)
         self.ax_3d_config.set_zlabel('Z (km)', fontsize=8)
@@ -1369,6 +1386,13 @@ class FlightSimulatorGUI:
         self.ax_3d.set_xlim(0, self.environment.size_x)
         self.ax_3d.set_ylim(0, self.environment.size_y)
         self.ax_3d.set_zlim(0, self.environment.size_z)
+        
+        # Configuration de l'aspect ratio pour avoir une vue à l'échelle
+        self.ax_3d.set_box_aspect([
+            self.environment.size_x, 
+            self.environment.size_y, 
+            self.environment.size_z
+        ])
         
         self.ax_3d.set_xlabel('')
         self.ax_3d.set_ylabel('')
@@ -1625,6 +1649,69 @@ class FlightSimulatorGUI:
                                   edgecolors='black', linewidths=1)
             
             print(f"✅ {len(self.multiple_trajectories)} TRAJECTOIRES MULTIPLES AFFICHÉES\n")
+        
+        # Afficher les positions des tentatives échouées s'il y en a
+        if hasattr(self, 'failed_trajectory_positions') and self.failed_trajectory_positions:
+            print(f"\n💥 AFFICHAGE DE {len(self.failed_trajectory_positions)} POSITIONS ÉCHOUÉES")
+            
+            for i, failed_pos in enumerate(self.failed_trajectory_positions):
+                pos = failed_pos['position']
+                attempt_num = failed_pos['attempt_number']
+                
+                print(f"   ❌ Position échouée {i+1} (tentative #{attempt_num}): ({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})")
+                
+                # Dessiner un X rouge pour marquer la position échouée
+                self.ax_3d.scatter([pos[0]], [pos[1]], [pos[2]], 
+                                  c='red', marker='x', s=150, alpha=0.8, 
+                                  linewidths=3, 
+                                  label=f'Échec #{attempt_num}' if i == 0 else '')
+                
+                # Ajouter le numéro de tentative comme texte près du point
+                self.ax_3d.text(pos[0], pos[1], pos[2] + 0.2, f'#{attempt_num}', 
+                               fontsize=8, color='red', weight='bold')
+            
+            print(f"✅ {len(self.failed_trajectory_positions)} POSITIONS ÉCHOUÉES AFFICHÉES\n")
+        
+        # Afficher les trajectoires des tentatives de recalcul s'il y en a (et si l'option est activée)
+        if (hasattr(self, 'retry_trajectories') and self.retry_trajectories and 
+            hasattr(self, 'show_retry_trajectories_var') and self.show_retry_trajectories_var.get()):
+            print(f"\n🔄 AFFICHAGE DE {len(self.retry_trajectories)} TRAJECTOIRES DE RECALCUL")
+            
+            # Couleurs pour les tentatives de recalcul (tons orangés et rouges)
+            retry_colors = ['orange', 'darkorange', 'orangered', 'red', 'darkred']
+            
+            for i, (trajectory, info) in enumerate(zip(self.retry_trajectories, self.retry_trajectories_info)):
+                color = retry_colors[i % len(retry_colors)]
+                safety_factor = info.get('safety_factor', 0)
+                attempt_num = info.get('attempt_number', i+1)
+                has_collision = info.get('has_collision', True)
+                
+                print(f"   🔧 Tentative {attempt_num}: {len(trajectory)} points, "
+                      f"sécurité {safety_factor:.1f}km, {'❌COLLISION' if has_collision else '✅OK'}")
+                
+                # Style de ligne selon le succès/échec
+                if has_collision:
+                    linestyle = '--'  # Pointillés pour les trajectoires avec collision
+                    alpha = 0.5
+                    linewidth = 1.5
+                else:
+                    linestyle = '-'   # Ligne pleine pour les trajectoires valides
+                    alpha = 0.8
+                    linewidth = 2.0
+                
+                # Dessiner la trajectoire de recalcul
+                self.ax_3d.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2], 
+                               color=color, linewidth=linewidth, alpha=alpha, 
+                               linestyle=linestyle,
+                               label=f'Recalcul #{attempt_num} ({safety_factor:.1f}km)' if i < 3 else '')
+                
+                # Marquer le point de départ de cette tentative
+                start_point = trajectory[0]
+                self.ax_3d.scatter([start_point[0]], [start_point[1]], [start_point[2]], 
+                                  c=color, marker='s', s=60, alpha=0.7, 
+                                  edgecolors='black', linewidths=1)
+            
+            print(f"✅ {len(self.retry_trajectories)} TRAJECTOIRES DE RECALCUL AFFICHÉES\n")
         
         # Dessiner les cylindres (obstacles) s'ils existent
         if hasattr(self, 'cylinders') and self.cylinders:
@@ -2304,6 +2391,20 @@ class FlightSimulatorGUI:
             print(f"\n📦 Trajectoire calculée: {len(self.trajectory)} points stockés dans self.trajectory")
             print(f"📦 Paramètres stockés: {list(self.trajectory_params.keys())}")
             
+            # Récupérer les trajectoires des tentatives de recalcul s'il y en a eu
+            if hasattr(calculator, 'retry_trajectories') and calculator.retry_trajectories:
+                self.retry_trajectories = calculator.retry_trajectories.copy()
+                self.retry_trajectories_info = calculator.retry_trajectories_info.copy()
+                print(f"\n🔄 {len(self.retry_trajectories)} tentatives de recalcul capturées pour visualisation")
+                for i, info in enumerate(self.retry_trajectories_info):
+                    status = "✅VALIDE" if not info['has_collision'] else "❌COLLISION"
+                    print(f"   • Tentative {info['attempt_number']}: {info['num_points']} pts, "
+                          f"marge {info['safety_factor']:.1f}km - {status}")
+            else:
+                # S'assurer que les listes sont vides si pas de recalcul
+                self.retry_trajectories = []
+                self.retry_trajectories_info = []
+            
             # Mettre à jour les visualisations
             print(f"\n🎨 Appel de _draw_environment() pour afficher la trajectoire...")
             self._draw_environment()
@@ -2430,6 +2531,12 @@ class FlightSimulatorGUI:
             self.multiple_trajectories = []
         if not hasattr(self, 'multiple_trajectories_params'):
             self.multiple_trajectories_params = []
+        if not hasattr(self, 'failed_trajectory_positions'):
+            self.failed_trajectory_positions = []
+        if not hasattr(self, 'retry_trajectories'):
+            self.retry_trajectories = []
+        if not hasattr(self, 'retry_trajectories_info'):
+            self.retry_trajectories_info = []
         
         # Sauvegarder la position actuelle de l'avion
         original_aircraft_config = None
@@ -2443,6 +2550,7 @@ class FlightSimulatorGUI:
         
         successful_simulations = 0
         failed_positions = 0
+        failed_attempts = []  # Liste pour stocker les numéros des tentatives échouées
         
         try:
             for i in range(num_trajectories):
@@ -2453,6 +2561,14 @@ class FlightSimulatorGUI:
                 if random_pos is None:
                     print(f"❌ Impossible de générer une position valide pour la simulation {i+1}")
                     failed_positions += 1
+                    failed_attempts.append(i+1)
+                    # Stocker l'échec de génération de position
+                    self.failed_trajectory_positions.append({
+                        'position': [0, 0, 0],  # Position par défaut puisqu'aucune n'a pu être générée
+                        'heading': 0,
+                        'attempt_number': i+1,
+                        'reason': 'Position valide non trouvée'
+                    })
                     continue
                 
                 x, y, z, heading = random_pos
@@ -2496,7 +2612,21 @@ class FlightSimulatorGUI:
                     if trajectory is None:
                         print(f"❌ Erreur simulation {i+1}: Impossible d'éviter les obstacles depuis cette position")
                         failed_positions += 1
+                        failed_attempts.append(i+1)
+                        # Stocker la position de l'échec avec le numéro de tentative
+                        self.failed_trajectory_positions.append({
+                            'position': [x, y, z],
+                            'heading': heading,
+                            'attempt_number': i+1,
+                            'reason': 'Collision avec obstacles'
+                        })
                         continue
+                    
+                    # Récupérer les tentatives de recalcul de ce calculateur et les ajouter
+                    if hasattr(calculator, 'retry_trajectories') and calculator.retry_trajectories:
+                        self.retry_trajectories.extend(calculator.retry_trajectories)
+                        self.retry_trajectories_info.extend(calculator.retry_trajectories_info)
+                        print(f"   📋 +{len(calculator.retry_trajectories)} tentatives de recalcul capturées")
                     
                     # Stocker la trajectoire sûre
                     self.multiple_trajectories.append(trajectory)
@@ -2507,6 +2637,15 @@ class FlightSimulatorGUI:
                     
                 except Exception as e:
                     print(f"❌ Erreur simulation {i+1}: {str(e)}")
+                    failed_positions += 1
+                    failed_attempts.append(i+1)
+                    # Stocker la position de l'échec avec le numéro de tentative
+                    self.failed_trajectory_positions.append({
+                        'position': [x, y, z],
+                        'heading': heading,
+                        'attempt_number': i+1,
+                        'reason': str(e)
+                    })
                     continue
             
             # Restaurer l'avion original
@@ -2528,7 +2667,7 @@ class FlightSimulatorGUI:
                 info_msg = f"✅ {successful_simulations}/{num_trajectories} nouvelles simulations réussies!\n"
                 info_msg += f"📊 Total des trajectoires affichées: {total_trajectories}\n\n"
                 if failed_positions > 0:
-                    info_msg += f"⚠️ {failed_positions} positions invalides générées\n\n"
+                    info_msg += f"⚠️ {failed_positions} tentatives échouées (numéros: {', '.join(map(str, failed_attempts))})\n\n"
                 
                 info_msg += "Les trajectoires sont affichées avec des couleurs différentes:\n"
                 colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
@@ -2552,6 +2691,9 @@ class FlightSimulatorGUI:
             count = len(self.multiple_trajectories)
             self.multiple_trajectories = []
             self.multiple_trajectories_params = []
+            self.failed_trajectory_positions = []
+            self.retry_trajectories = []
+            self.retry_trajectories_info = []
             
             # Mettre à jour l'affichage
             self._draw_environment()
@@ -2564,6 +2706,14 @@ class FlightSimulatorGUI:
         else:
             messagebox.showinfo("Information", "Aucune trajectoire multiple à effacer.")
             
+    def _toggle_retry_trajectories_display(self):
+        """Bascule l'affichage des trajectoires de recalcul"""
+        
+        # Simplement redessiner l'environnement - l'affichage sera conditionnel
+        if self.environment is not None:
+            self._draw_environment()
+            print(f"🔄 Affichage des tentatives de recalcul: {'✅ ACTIVÉ' if self.show_retry_trajectories_var.get() else '❌ DÉSACTIVÉ'}")
+            
     def _reset(self):
         """Réinitialise la simulation"""
         
@@ -2574,6 +2724,9 @@ class FlightSimulatorGUI:
         # Réinitialiser les trajectoires multiples
         self.multiple_trajectories = []
         self.multiple_trajectories_params = []
+        self.failed_trajectory_positions = []
+        self.retry_trajectories = []
+        self.retry_trajectories_info = []
         
         # Réinitialiser les valeurs
         self.pos_x_var.set(0.0)

@@ -19,6 +19,8 @@ class TrajectoryCalculator:
             environment: Instance de la classe Environment
         """
         self.environment = environment
+        self.retry_trajectories = []  # Stockage des trajectoires de tentatives
+        self.retry_trajectories_info = []  # Informations sur chaque tentative
         
     def calculate_trajectory(self, aircraft, cylinders=None):
         """
@@ -759,6 +761,10 @@ class TrajectoryCalculator:
                     print(f"      Cylindre {cyl_idx}: centre=({cyl['x']:.1f}, {cyl['y']:.1f}), "
                           f"rayon={cyl['radius']:.2f} km, distance={dist:.2f} km")
                 
+                # Réinitialiser le stockage des tentatives pour cette nouvelle trajectoire
+                self.retry_trajectories = []
+                self.retry_trajectories_info = []
+                
                 # RECALCULER avec marges augmentées (tentatives multiples)
                 print(f"\n   🔄 RECALCUL avec marges de sécurité augmentées...")
                 
@@ -850,6 +856,15 @@ class TrajectoryCalculator:
                     # Vérifier cette nouvelle trajectoire
                     has_collision_retry, _, _ = self._check_trajectory_collision(trajectory_retry, cylinders)
                     
+                    # Stocker cette tentative de trajectoire pour visualisation
+                    self.retry_trajectories.append(trajectory_retry.copy())
+                    self.retry_trajectories_info.append({
+                        'attempt_number': attempt + 1,
+                        'safety_factor': safety_factor,
+                        'has_collision': has_collision_retry,
+                        'num_points': len(trajectory_retry)
+                    })
+                    
                     if not has_collision_retry:
                         print(f"   ✅ Trajectoire VALIDE trouvée (tentative {attempt + 1})")
                         trajectory = trajectory_retry
@@ -859,23 +874,18 @@ class TrajectoryCalculator:
                         print(f"   ⚠️  Collision persistante (tentative {attempt + 1})")
                 
                 else:
-                    print(f"\n   ⛔ ÉCHEC avec marges normales - TENTATIVE DE CONTOURNEMENT FORCÉ")
+                    print(f"\n   ⛔ ÉCHEC avec marges normales - AUCUN CONTOURNEMENT POSSIBLE")
                     
-                    # Essayer un contournement forcé avec waypoints très éloignés
-                    print(f"   🚀 Calcul de contournement d'urgence avec waypoints sécurisés...")
+                    # Toutes les tentatives avec marges augmentées ont échoué
+                    print(f"   � Toutes les tentatives de recalcul ont échoué")
+                    print(f"   🚫 AUCUNE TRAJECTOIRE SÛRE TROUVÉE depuis cette position")
+                    print(f"   💡 Suggestions:")
+                    print(f"      • Déplacer l'avion plus loin des obstacles")
+                    print(f"      • Réduire la taille ou le nombre d'obstacles")
+                    print(f"      • Changer la position du FAF ou de l'aéroport")
                     
-                    emergency_trajectory = self._calculate_emergency_avoidance_trajectory(
-                        start_pos, faf_pos, aircraft, cylinders, waypoints_2d
-                    )
-                    
-                    if emergency_trajectory is not None:
-                        print(f"   ✅ CONTOURNEMENT D'URGENCE RÉUSSI")
-                        trajectory = emergency_trajectory
-                    else:
-                        print(f"   ⛔ ÉCHEC TOTAL: Impossible d'éviter les obstacles")
-                        print(f"   🚫 REFUS ABSOLU: Aucune trajectoire ne sera retournée")
-                        # SÉCURITÉ ABSOLUE : ne jamais retourner une trajectoire avec collision
-                        return None, {}
+                    # SÉCURITÉ ABSOLUE : ne jamais retourner une trajectoire avec collision
+                    return None, {}
             else:
                 print(f"   ✅ Aucune collision - Trajectoire VALIDE")
         
