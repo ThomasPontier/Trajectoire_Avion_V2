@@ -224,80 +224,81 @@ Ce schéma expose le pipeline complet, les décisions clés, et les fonctions ex
 ```mermaid
 flowchart TD
    %% Entrées & objets
-   subgraph UI[Interface & Config]
-      A[Lecture config.json / saisie UI]
-      B[Création Environment\n(airport_position, faf_position, dimensions)]
-      C[Création Aircraft\n(position, speed, heading, type→specs)]
+   subgraph UI["Interface & Config"]
+      A["Lecture config.json / saisie UI"]
+      B["Création Environment<br/>airport_position, faf_position, dimensions"]
+      C["Création Aircraft<br/>position, speed, heading, type specs"]
    end
 
    A --> B
    A --> C
 
    %% Option tours automatiques si pente trop forte
-   subgraph Precheck[Pré-analyse pente (optionnel)]
-      P0{Pente directe faisable ?}
-      P1[_check_slope_feasibility(aircraft, start, faf)_]
+   subgraph Precheck["Pré-analyse pente optionnel"]
+      P0{"Pente directe faisable ?"}
+      P1["check_slope_feasibility"]
    end
    B --> P1
    C --> P1
    P1 --> P0
 
    %% Branche tours automatiques
-   P0 -- "Non" --> TURNS[calculate_trajectory_with_automatic_turns]
-   subgraph Turns[Tours automatiques]
-      T1[_calculate_altitude_reduction_turns_]
-      T2[_find_safe_spiral_center / _evaluate_spiral_center_safety_]
-      T3[_generate_spiral_trajectory_]
-      T4[Création nouvel Aircraft à fin de spirale]
-      T5[calculate_trajectory (standard)]
+   P0 --"Non"--> TURNS["calculate_trajectory_with_automatic_turns"]
+   subgraph Turns["Tours automatiques"]
+      T1["calculate_altitude_reduction_turns"]
+      T2["find_safe_spiral_center"]
+      T3["generate_spiral_trajectory"]
+      T4["Création nouvel Aircraft à fin de spirale"]
+      T5["calculate_trajectory standard"]
    end
-   TURNS --> OUT1
+   TURNS --> T1 --> T2 --> T3 --> T4 --> T5 --> OUT1
 
    %% Choix de mode (UI)
-   M1{Virages réalistes activés ?}
-   P0 -- "Oui" --> M1
-   P0 -- "(Si pré-analyse non utilisée)" --> M1
+   M1{"Virages réalistes activés ?"}
+   P0 --"Oui"--> M1
 
    %% Branche virages réalistes
-   M1 -- Oui --> R0[calculate_trajectory_with_turn]
-   subgraph Realistic[Virages réalistes]
-      R1[aircraft.calculate_min_turn_radius]
-      R2[_calculate_tangent_intercept_]
-      R3{Interception tangente possible ?}
-      R4[_create_arc_trajectory_]
-      R5[_calculate_approach_with_descent_and_speed_]
-      R6[_calculate_parameters_with_speed_profile_]
+   M1 --"Oui"--> R0["calculate_trajectory_with_turn"]
+   subgraph Realistic["Virages réalistes"]
+      R1["aircraft.calculate_min_turn_radius"]
+      R2["calculate_tangent_intercept"]
+      R3{"Interception tangente possible ?"}
+      R4["create_arc_trajectory"]
+      R5["calculate_approach_with_descent_and_speed"]
+      R6["calculate_parameters_with_speed_profile"]
    end
    R0 --> R1 --> R2 --> R3
-   R3 -- Oui --> R4 --> R5 --> R6 --> OUT2
-   R3 -- Non --> S0[Fallback → calculate_trajectory]
+   R3 --"Oui"--> R4 --> R5 --> R6 --> OUT2
+   R3 --"Non"--> S0["Fallback calculate_trajectory"]
 
    %% Branche standard (alignement axe piste)
-   M1 -- Non --> S0
-   subgraph Standard[Standard (alignement axe piste)]
-      S1[_calculate_runway_intercept_point_]
-      S2[_build_trajectory_with_runway_alignment_]
-      S2a[Phase 1: segment initial rectiligne]
-      S2b[_calculate_avoidance_waypoints_ → waypoints]
-   S2c[Courbes de Bézier entre waypoints]
-   S2d[Gestion altitude:\npalier → transition (super-smoothstep 7e) → descente]
-   S2e[_check_trajectory_collision_]
-   S2f{Collision ?}
-   S2g[Recalcule avec marges ↑ :\n_calculate_avoidance_waypoints_with_margin_ (boucle 5 tentatives)]
-      S3[_calculate_parameters_]
+   M1 --"Non"--> S0
+   subgraph Standard["Standard alignement axe piste"]
+      S1["calculate_runway_intercept_point"]
+      S2["build_trajectory_with_runway_alignment"]
+      S2a["Phase 1: segment initial rectiligne"]
+      S2b["calculate_avoidance_waypoints"]
+      S2c["Courbes de Bézier entre waypoints"]
+      S2d["Gestion altitude<br/>palier transition descente"]
+      S2e["check_trajectory_collision"]
+      S2f{"Collision ?"}
+      S2g["Recalcule avec marges<br/>calculate_avoidance_waypoints_with_margin"]
+      S3["calculate_parameters"]
    end
    S0 --> S1 --> S2 --> S2a --> S2b --> S2c --> S2d --> S2e --> S2f
-   S2f -- Oui --> S2g --> S2e
-   S2f -- Non --> S3 --> OUT3
+   S2f --"Oui"--> S2g --> S2e
+   S2f --"Non"--> S3 --> OUT3
 
    %% Sorties communes
-   subgraph OUT[Sorties]
-      OUT1[Trajectoire (spirale + standard) + params]
-      OUT2[Trajectoire (arc + approche) + params]
-      OUT3[Trajectoire (standard) + params]
+   subgraph OUT["Sorties"]
+      OUT1["Trajectoire spirale + standard + params"]
+      OUT2["Trajectoire arc + approche + params"]
+      OUT3["Trajectoire standard + params"]
    end
 
-   OUT --> VIZ[Plots 3D/2D & Graphiques (Matplotlib/Tk)]
+   OUT1 --> VIZ["Plots 3D/2D & Graphiques Matplotlib/Tk"]
+   OUT2 --> VIZ
+   OUT3 --> VIZ
 ```
 
 ### 13.2 Cartographie fonctionnelle (ASCII + I/O)

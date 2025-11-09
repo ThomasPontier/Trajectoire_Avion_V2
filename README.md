@@ -1,6 +1,6 @@
 # 🛩️ Simulateur de Trajectoire d'Avion
 
-**Projet P21 - ESTACA 4ème année**
+
 
 Simulation et visualisation de trajectoires aériennes optimales pour l'approche finale d'un aéroport.
 
@@ -9,26 +9,6 @@ Simulation et visualisation de trajectoires aériennes optimales pour l'approche
 
 ---
 
-## 📥 Téléchargement Direct
-
-### 🚀 Version Exécutable (Recommandé)
-
-**[📦 Télécharger SimulateurTrajectoireAvion.exe](https://github.com/ThomasPontier/Trajectoire_Avion_V2/releases/download/v1.4/SimulateurTrajectoireAvion.exe)**
-
-> **💡 Instructions :**
-> 1. Cliquez sur le lien ci-dessus
-> 2. Le téléchargement démarre automatiquement
-> 3. Double-cliquez sur le fichier pour lancer l'application
-> 
-> *Alternative : générez localement avec `python build_exe.py`*
-
-**Caractéristiques :**
-- ✅ **Prêt à utiliser** : double-clic et c'est parti !
-- ✅ **Aucune installation** Python nécessaire
-- ✅ **Taille** : ~150 MB
-- ✅ **Compatible** Windows 10/11
-
----
 
 ## 🎯 Description
 
@@ -43,7 +23,7 @@ Calculez et visualisez en 3D la trajectoire optimale d'un avion vers le FAF (Fin
 
 ---
 
-## 🚀 Installation Alternative
+## 🚀 Installation 
 
 ### Code Source (Développeurs)
 
