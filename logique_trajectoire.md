@@ -226,8 +226,8 @@ flowchart TD
    %% Entrées & objets
    subgraph UI[Interface & Config]
       A[Lecture config.json / saisie UI]
-      B[Création Environment<br/>(airport_position, faf_position, dimensions)]
-      C[Création Aircraft<br/>(position, speed, heading, type→specs)]
+      B[Création Environment\n(airport_position, faf_position, dimensions)]
+      C[Création Aircraft\n(position, speed, heading, type→specs)]
    end
 
    A --> B
@@ -279,11 +279,11 @@ flowchart TD
       S2[_build_trajectory_with_runway_alignment_]
       S2a[Phase 1: segment initial rectiligne]
       S2b[_calculate_avoidance_waypoints_ → waypoints]
-      S2c[Courbes de Bézier entre waypoints]
-      S2d[Gestion altitude:<br/>palier → transition (super-smoothstep 7e) → descente]
-      S2e[_check_trajectory_collision_]
-      S2f{Collision ?}
-      S2g[Recalcule avec marges ↑ :<br/>_calculate_avoidance_waypoints_with_margin_ (boucle 5 tentatives)]
+   S2c[Courbes de Bézier entre waypoints]
+   S2d[Gestion altitude:\npalier → transition (super-smoothstep 7e) → descente]
+   S2e[_check_trajectory_collision_]
+   S2f{Collision ?}
+   S2g[Recalcule avec marges ↑ :\n_calculate_avoidance_waypoints_with_margin_ (boucle 5 tentatives)]
       S3[_calculate_parameters_]
    end
    S0 --> S1 --> S2 --> S2a --> S2b --> S2c --> S2d --> S2e --> S2f
