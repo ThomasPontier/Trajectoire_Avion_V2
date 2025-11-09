@@ -9,12 +9,20 @@ Simulation et visualisation de trajectoires aériennes optimales pour l'approche
 
 ---
 
-## � Téléchargement Direct
+## 📥 Téléchargement Direct
 
 ### 🚀 Version Exécutable (Recommandé)
 
-**[📦 Télécharger SimulateurTrajectoireAvion.exe](https://github.com/ThomasPontier/Trajectoire_Avion_V2/releases/latest/download/SimulateurTrajectoireAvion.exe)**
+**[📦 Télécharger SimulateurTrajectoireAvion.exe](https://github.com/ThomasPontier/Trajectoire_Avion_V2/releases/download/v1.4/SimulateurTrajectoireAvion.exe)**
 
+> **💡 Instructions :**
+> 1. Cliquez sur le lien ci-dessus
+> 2. Le téléchargement démarre automatiquement
+> 3. Double-cliquez sur le fichier pour lancer l'application
+> 
+> *Alternative : générez localement avec `python build_exe.py`*
+
+**Caractéristiques :**
 - ✅ **Prêt à utiliser** : double-clic et c'est parti !
 - ✅ **Aucune installation** Python nécessaire
 - ✅ **Taille** : ~150 MB

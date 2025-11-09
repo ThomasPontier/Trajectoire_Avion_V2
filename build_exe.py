@@ -44,6 +44,16 @@ def build_executable():
     print("\n" + "="*70)
     print("🚀 CONSTRUCTION DE L'EXÉCUTABLE")
     print("="*70 + "\n")
+
+    # Se placer dans le répertoire du script pour que les chemins relatifs fonctionnent
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        os.chdir(script_dir)
+    except Exception as e:
+        print(f"❌ Impossible de changer de répertoire vers {script_dir}: {e}")
+        return False
+    else:
+        print(f"📂 Répertoire de travail: {os.getcwd()}")
     
     # Vérifier les dépendances
     if not check_dependencies():
@@ -146,8 +156,9 @@ def build_executable():
             print(f"❌ Impossible de supprimer {target_exe} (fichier en cours d'utilisation).\n   Fermez l'application SimulateurTrajectoireAvion.exe si elle est en cours et relancez le build.")
             return False
 
+    # Utiliser l'interpréteur courant pour garantir la bonne version de PyInstaller
     cmd = [
-        'pyinstaller',
+        sys.executable, '-m', 'PyInstaller',
         '--name=SimulateurTrajectoireAvion',
         '--onefile',                    # Un seul fichier exécutable
         '--windowed',                   # Pas de console (interface graphique)
@@ -164,6 +175,13 @@ def build_executable():
         '--optimize=2',                 # Optimisation Python
         '--noupx',                      # Désactiver UPX (plus compatible)
     ] + icon_option + ['main.py']
+
+    # Vérifier l'existence du fichier d'entrée
+    entry_point = os.path.join(os.getcwd(), 'main.py')
+    if not os.path.isfile(entry_point):
+        print(f"❌ Fichier d'entrée introuvable: {entry_point}")
+        print("   Assurez-vous de lancer ce script depuis n'importe où: il se repositionne automatiquement.")
+        return False
     
     print("\n📋 Commande PyInstaller :")
     print(" ".join(cmd))
