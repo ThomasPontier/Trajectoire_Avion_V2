@@ -13,7 +13,7 @@ Simulation et visualisation de trajectoires aériennes optimales pour l'approche
 
 ### 🚀 Version Exécutable (Recommandé)
 
-**[📦 Télécharger SimulateurTrajectoireAvion.exe](https://github.com/ThomasPontier/Trajectoire_Avion_V2/releases/download/v1.4/SimulateurTrajectoireAvion.exe)**
+**[📦 Télécharger SimulateurTrajectoireAvion.exe](https://github.com/ThomasPontier/Trajectoire_Avion_V2/releases/latest/download/SimulateurTrajectoireAvion.exe)**
 
 > **💡 Instructions :**
 > 1. Cliquez sur le lien ci-dessus
