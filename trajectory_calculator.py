@@ -34,12 +34,8 @@ class TrajectoryCalculator:
         print("\n" + "="*70)
         print("🛩️  CALCUL TRAJECTOIRE AVEC ALIGNEMENT SUR AXE PISTE (Mode virages simplifiés)")
         print("="*70)
-        print(f"📍 Position initiale: ({start_pos[0]:.1f}, {start_pos[1]:.1f}, {start_pos[2]:.1f}) km")
-        print(f"� Aéroport: ({airport_pos[0]:.1f}, {airport_pos[1]:.1f}, {airport_pos[2]:.1f}) km")
-        print(f"�🎯 FAF cible: ({faf_pos[0]:.1f}, {faf_pos[1]:.1f}, {faf_pos[2]:.1f}) km")
-        print(f"🧭 Cap initial: {aircraft.heading:.1f}°")
-        print(f"⚡ Vitesse: {aircraft.speed:.0f} km/h")
-        print(f"✈️  Type: {aircraft.aircraft_type}")
+    # Prints détaillés supprimés (position, cap, vitesse, type) pour réduire le bruit
+    # Conserver uniquement les informations de progression essentielles plus bas
         
         # Calculer l'axe d'approche (FAF → aéroport, direction de l'atterrissage)
         # L'avion doit arriver au FAF en étant orienté VERS l'aéroport
@@ -86,155 +82,6 @@ class TrajectoryCalculator:
             current_direction, runway_direction, cylinders
         )
     
-    def _calculate_trajectory_with_slope_constraint(self, aircraft, start_pos, target_pos):
-        """
-        Calcule une trajectoire avec vol en palier puis descente respectant la pente max.
-        Utilise une transition progressive (smooth) entre les phases.
-        
-        Logique:
-        1. Calculer la distance minimale nécessaire pour descendre avec la pente max
-        2. Voler en palier jusqu'au point de début de transition
-        3. Phase de transition progressive (courbe lisse)
-        4. Descendre avec la pente maximale jusqu'au FAF
-        
-        Args:
-            aircraft: Instance de la classe Aircraft
-            start_pos: Position de départ [x, y, z]
-            target_pos: Position cible (FAF) [x, y, z]
-            
-        Returns:
-            tuple: (trajectory, parameters)
-        """
-        
-        # Distance horizontale totale
-        horizontal_distance = np.linalg.norm(target_pos[:2] - start_pos[:2])
-        
-        # Différence d'altitude (négative si descente)
-        altitude_diff = target_pos[2] - start_pos[2]
-        
-        # Pente maximale de descente (en radians, valeur négative)
-        max_descent_slope_rad = np.radians(aircraft.max_descent_slope)
-        
-        # Distance minimale nécessaire pour la descente avec la pente max
-        # distance = altitude_diff / tan(slope)
-        min_descent_distance = abs(altitude_diff / np.tan(max_descent_slope_rad))
-        
-        # Distance de transition (smooth) - environ 10% de la distance de descente ou 2 km min
-        transition_distance = max(min(min_descent_distance * 0.15, 3.0), 1.0)
-        
-        # Vecteur de direction horizontal normalisé
-        horizontal_direction = target_pos[:2] - start_pos[:2]
-        horizontal_direction = horizontal_direction / np.linalg.norm(horizontal_direction)
-        
-        # Calculer les phases
-        if min_descent_distance + transition_distance >= horizontal_distance:
-            # Pas assez de distance: transition dès le départ
-            level_flight_distance = 0.0
-            transition_distance = min(transition_distance, horizontal_distance * 0.3)
-            descent_distance = horizontal_distance - transition_distance
-        else:
-            # On peut voler en palier avant la transition
-            level_flight_distance = horizontal_distance - min_descent_distance - transition_distance
-            descent_distance = min_descent_distance
-        
-        # Nombre de points pour une trajectoire lisse (minimum 500 points, ou 1 point tous les 100m)
-        min_points = 500
-        points_per_km = 100  # 100 points par km pour un tracé très lisse
-        n_points = max(min_points, int(horizontal_distance * points_per_km))
-        
-        # Calculer les indices pour chaque phase
-        if horizontal_distance > 0:
-            n_level = int(n_points * level_flight_distance / horizontal_distance)
-            n_transition = int(n_points * transition_distance / horizontal_distance)
-            n_descent = n_points - n_level - n_transition
-        else:
-            n_level = 0
-            n_transition = 0
-            n_descent = n_points
-        
-        # Créer la trajectoire avec les 3 phases
-        trajectory = []
-        current_distance = 0.0
-        
-        # Phase 1: Vol en palier
-        if n_level > 0:
-            for i in range(n_level):
-                t = i / max(n_level - 1, 1)
-                d = t * level_flight_distance
-                pos = start_pos.copy()
-                pos[:2] = start_pos[:2] + horizontal_direction * d
-                pos[2] = start_pos[2]  # Altitude constante
-                trajectory.append(pos)
-                current_distance = d
-        
-        # Phase 2: Transition progressive (courbe smooth avec fonction cosinus)
-        if n_transition > 0:
-            for i in range(n_transition):
-                t = i / max(n_transition - 1, 1)
-                
-                # Utiliser une fonction cosinus pour une transition douce
-                # smooth_factor varie de 0 à 1 avec une courbe en S
-                smooth_factor = (1 - np.cos(t * np.pi)) / 2
-                
-                # Distance horizontale
-                d = level_flight_distance + t * transition_distance
-                
-                # Altitude avec transition progressive
-                # De l'altitude de palier à l'altitude de début de descente linéaire
-                z_start = start_pos[2]
-                z_transition_end = start_pos[2] - (transition_distance * abs(np.tan(max_descent_slope_rad)))
-                
-                pos = start_pos.copy()
-                pos[:2] = start_pos[:2] + horizontal_direction * d
-                pos[2] = z_start + smooth_factor * (z_transition_end - z_start)
-                trajectory.append(pos)
-                current_distance = d
-        
-        # Phase 3: Descente linéaire
-        if n_descent > 0:
-            descent_start_distance = level_flight_distance + transition_distance
-            descent_start_altitude = trajectory[-1][2] if len(trajectory) > 0 else start_pos[2]
-            
-            for i in range(n_descent):
-                t = i / max(n_descent - 1, 1)
-                d = descent_start_distance + t * descent_distance
-                
-                # Calcul de l'altitude pour atteindre exactement le FAF
-                remaining_altitude = target_pos[2] - descent_start_altitude
-                
-                pos = start_pos.copy()
-                pos[:2] = start_pos[:2] + horizontal_direction * d
-                pos[2] = descent_start_altitude + t * remaining_altitude
-                trajectory.append(pos)
-        
-        # S'assurer qu'on finit exactement au FAF avec une transition d'altitude douce
-        if len(trajectory) > 0:
-            # Au lieu de forcer brutalement, faire une transition douce sur les derniers points
-            n_smooth_points = min(50, len(trajectory) // 10)  # 50 points ou 10% de la trajectoire
-            if n_smooth_points > 0 and len(trajectory) >= n_smooth_points:
-                for i in range(n_smooth_points):
-                    idx = len(trajectory) - n_smooth_points + i
-                    if idx >= 0:
-                        t = i / (n_smooth_points - 1)
-                        # Transition douce vers la position FAF exacte
-                        trajectory[idx][:2] = (1 - t) * trajectory[idx][:2] + t * target_pos[:2]
-                        trajectory[idx][2] = (1 - t) * trajectory[idx][2] + t * target_pos[2]
-            
-            # Dernière position exactement au FAF
-            trajectory[-1] = target_pos.copy()
-        
-        trajectory = np.array(trajectory)
-        
-        # Calculer les paramètres
-        parameters = self._calculate_parameters(trajectory, aircraft.speed)
-        parameters['level_flight_distance'] = level_flight_distance
-        parameters['transition_distance'] = transition_distance
-        parameters['descent_distance'] = descent_distance
-        parameters['descent_start_index'] = n_level
-        parameters['transition_end_index'] = n_level + n_transition
-        parameters['n_points'] = n_points
-        
-        return trajectory, parameters
     
     def _calculate_simple_trajectory(self, aircraft, start_pos, target_pos):
         """
@@ -717,91 +564,6 @@ class TrajectoryCalculator:
         
         return trajectory, parameters
     
-    def _calculate_trajectory_along_runway(self, aircraft, start_pos, faf_pos, runway_dir):
-        """
-        Calcule la trajectoire le long de l'axe piste avec gestion altitude (palier, transition smooth,
-        descente à pente max) pour arriver exactement au FAF.
-        """
-        
-        horizontal_distance = np.linalg.norm(faf_pos[:2] - start_pos[:2])
-        altitude_diff = faf_pos[2] - start_pos[2]
-        
-        # Si pas de descente nécessaire
-        if altitude_diff >= -0.01:
-            n_points = max(100, int(horizontal_distance * 100))
-            trajectory = np.zeros((n_points, 3))
-            for i in range(n_points):
-                t = i / (n_points - 1)
-                trajectory[i] = start_pos + t * (faf_pos - start_pos)
-            return trajectory
-        
-        # Descente avec contrainte de pente
-        max_descent_slope_rad = np.radians(aircraft.max_descent_slope)
-        min_descent_distance = abs(altitude_diff / np.tan(max_descent_slope_rad))
-        
-        # Distance de transition
-        transition_distance = max(min(min_descent_distance * 0.15, 2.0), 0.5)
-        
-        if horizontal_distance < min_descent_distance + transition_distance:
-            level_distance = 0
-        else:
-            level_distance = horizontal_distance - min_descent_distance - transition_distance
-        
-        # Construire la trajectoire avec transitions ultra-douces
-        n_points = max(500, int(horizontal_distance * 100))
-        trajectory = np.zeros((n_points, 3))
-        
-        # Augmenter la distance de transition pour une descente encore plus douce
-        transition_distance = max(min(min_descent_distance * 0.25, 3.0), 1.0)
-        
-        if horizontal_distance < min_descent_distance + transition_distance:
-            level_distance = 0
-        else:
-            level_distance = horizontal_distance - min_descent_distance - transition_distance
-        
-        for i in range(n_points):
-            t = i / (n_points - 1)
-            current_distance = t * horizontal_distance
-            
-            # Position horizontale le long de l'axe
-            trajectory[i, :2] = start_pos[:2] + runway_dir * current_distance
-            
-            # Altitude avec phases ultra-lissées
-            if current_distance < level_distance:
-                # Phase 1: Vol en palier
-                trajectory[i, 2] = start_pos[2]
-            elif current_distance < level_distance + transition_distance:
-                # Phase 2: Transition ultra-douce avec smoothstep quintic (dérivées 1 et 2 nulles)
-                transition_progress = (current_distance - level_distance) / transition_distance
-                # Smoothstep quintic: 6t⁵ - 15t⁴ + 10t³ (variation de pente très progressive)
-                smooth_factor = 6 * transition_progress**5 - 15 * transition_progress**4 + 10 * transition_progress**3
-                descent_in_transition = transition_distance * abs(np.tan(max_descent_slope_rad))
-                trajectory[i, 2] = start_pos[2] - smooth_factor * descent_in_transition
-            else:
-                # Phase 3: Descente constante
-                descent_distance = current_distance - level_distance - transition_distance
-                descent_so_far = transition_distance * abs(np.tan(max_descent_slope_rad))
-                additional_descent = descent_distance * abs(np.tan(max_descent_slope_rad))
-                trajectory[i, 2] = start_pos[2] - descent_so_far - additional_descent
-        
-        # Finir exactement au FAF avec transition douce d'altitude
-        # Lisser les derniers points pour éviter une chute brutale
-        n_smooth_end = min(200, len(trajectory) // 5)  # Points pour lissage final
-        if n_smooth_end > 0 and len(trajectory) > n_smooth_end:
-            target_altitude = faf_pos[2]
-            start_smooth_idx = len(trajectory) - n_smooth_end
-            start_altitude = trajectory[start_smooth_idx][2]
-            
-            for i in range(n_smooth_end):
-                idx = start_smooth_idx + i
-                t = i / (n_smooth_end - 1)
-                # Progression douce de l'altitude vers le FAF
-                trajectory[idx][2] = start_altitude + t * (target_altitude - start_altitude)
-        
-        # Finir exactement au FAF
-        trajectory[-1] = faf_pos
-        
-        return trajectory
     
     def _calculate_parameters(self, trajectory, speed):
         """
@@ -1275,16 +1037,16 @@ class TrajectoryCalculator:
         # Ajuster le rayon si nécessaire pour éviter les obstacles
         adjusted_radius = self._adjust_turn_radius_for_obstacles(turn_radius, start_pos, cylinders)
         if adjusted_radius != turn_radius:
-            print(f"🔄 Rayon de virage ajusté: {turn_radius:.3f} → {adjusted_radius:.3f} km (évitement obstacles)")
+            # Info d'ajustement conservée pour diagnostic
+            print(f"🔄 Rayon ajusté: {turn_radius:.3f} → {adjusted_radius:.3f} km (évitement obstacles)")
             turn_radius = adjusted_radius
-        else:
-            print(f"🔄 Rayon de virage: {turn_radius:.3f} km")
+        # Suppression print rayon inchangé (non essentiel)
         
         # Vitesse de descente pendant les tours (conservatrice pour sécurité)
         # Réduire encore plus si obstacles proches
         safety_factor = 0.6 if cylinders else 0.7  # Plus conservateur avec obstacles
         safe_descent_rate = abs(aircraft.max_descent_slope) * safety_factor
-        print(f"⬇️  Taux de descente pendant tours: {safe_descent_rate:.1f}° (facteur sécurité: {safety_factor})")
+    # Taux de descente interne supprimé (non essentiel)
         
         # Calculer le nombre de tours nécessaires
         turn_circumference = 2 * np.pi * turn_radius
@@ -1311,9 +1073,7 @@ class TrajectoryCalculator:
             else:
                 safe_descent_rate = required_descent_rate
         
-        print(f"📐 Périmètre par tour: {turn_circumference:.2f} km")
-        print(f"📉 Descente par tour: {turn_circumference * np.tan(np.radians(safe_descent_rate)):.3f} km")
-        print(f"🔢 Nombre de tours: {num_turns:.1f}")
+    # Détails périmètre/descente/nombre de tours supprimés (non essentiels)
         
         # Choisir une position pour la spirale qui évite les obstacles
         spiral_center = self._find_safe_spiral_center(start_pos, target_pos, turn_radius, cylinders)
@@ -1324,7 +1084,7 @@ class TrajectoryCalculator:
             print(f"⚠️  Spirale initiale non sûre, recherche position alternative...")
             spiral_center = self._find_alternative_spiral_center(start_pos, target_pos, turn_radius, cylinders)
         
-        print(f"⭕ Centre de spirale final: ({spiral_center[0]:.1f}, {spiral_center[1]:.1f}) km")
+    # Centre final supprimé (nous gardons le résumé après génération)
         
         # Générer la trajectoire en spirale avec évitement intégré
         spiral_trajectory = self._generate_spiral_trajectory(
@@ -1690,9 +1450,7 @@ class TrajectoryCalculator:
         # Vérification et lissage final pour éviter les discontinuités
         trajectory = self._smooth_trajectory(trajectory)
         
-        print(f"   🌀 Spirale générée avec transitions douces: {len(trajectory)} points sur {num_turns:.1f} tours")
-        print(f"   📐 Points par tour: {points_per_turn} (haute densité)")
-        print(f"   🔄 Phases: entrée {entry_phase*100:.0f}%, stable {stable_phase*100:.0f}%, sortie {exit_phase*100:.0f}%")
+        print(f"   🌀 Spirale générée: {len(trajectory)} points sur {num_turns:.1f} tours")
         return trajectory
     
     def _smooth_transition(self, t):
@@ -1835,8 +1593,7 @@ class TrajectoryCalculator:
             
             # Si le cylindre est trop proche, créer des waypoints de contournement
             if dist_to_segment < cyl_radius:
-                print(f"   🚧 Obstacle détecté - création waypoints de contournement")
-                print(f"      Distance au segment: {dist_to_segment:.2f} km (rayon+marge: {cyl_radius:.2f} km)")
+                print(f"   🚧 Obstacle détecté - ajout waypoints")
                 
                 # Vecteur perpendiculaire à la trajectoire
                 perp = np.array([-traj_dir[1], traj_dir[0]])
@@ -1884,10 +1641,7 @@ class TrajectoryCalculator:
                 waypoints.append(entry_point)
                 waypoints.append(exit_point)
                 
-                print(f"   ↪️  Point entrée: ({entry_point[0]:.1f}, {entry_point[1]:.1f}) - distance au centre: {np.linalg.norm(entry_point - cyl_center):.2f} km")
-                print(f"   ↩️  Point sortie: ({exit_point[0]:.1f}, {exit_point[1]:.1f}) - distance au centre: {np.linalg.norm(exit_point - cyl_center):.2f} km")
-                print(f"   ✅ Contournement par la {'droite' if side > 0 else 'gauche'}")
-        
+               
         return waypoints
     
     def _calculate_avoidance_waypoints_with_margin(self, start_2d, end_2d, cylinders, altitude, safety_factor):
@@ -1997,54 +1751,3 @@ class TrajectoryCalculator:
         
         return len(colliding_cylinders) > 0, colliding_cylinders, first_collision_idx
     
-    def _calculate_avoidance_point(self, start_pos, target_pos, cylinder, safety_margin=0.5):
-        """
-        Génère un point de contournement latéral autour d'un obstacle cylindrique.
-        Projette le segment sur le cylindre, trouve le point le plus proche, puis crée
-        un waypoint à l'extérieur du rayon élargi (rayon + marge). L'altitude est ajustée
-        pour rester au-dessus de l'obstacle si nécessaire.
-        """
-        cyl_center = np.array([cylinder['x'], cylinder['y']])
-        cyl_radius = cylinder['radius'] + safety_margin
-        
-        # Direction du segment start -> target
-        direction = target_pos[:2] - start_pos[:2]
-        segment_length = np.linalg.norm(direction)
-        
-        if segment_length < 0.01:
-            # Points trop proches, contourner perpendiculairement
-            perp = np.array([-1, 1])
-            avoidance_2d = cyl_center + perp * cyl_radius
-        else:
-            direction_unit = direction / segment_length
-            
-            # Perpendiculaire à la direction
-            perp = np.array([-direction_unit[1], direction_unit[0]])
-            
-            # Vecteur du centre du cylindre vers le segment
-            to_start = start_pos[:2] - cyl_center
-            projection = np.dot(to_start, direction_unit)
-            
-            # Point le plus proche sur le segment
-            closest_on_segment = start_pos[:2] + direction_unit * np.clip(projection, 0, segment_length)
-            
-            # Direction du centre vers le point le plus proche
-            to_closest = closest_on_segment - cyl_center
-            dist_to_closest = np.linalg.norm(to_closest)
-            
-            if dist_to_closest > 0.01:
-                # Contourner dans la direction perpendiculaire la plus proche
-                outward = to_closest / dist_to_closest
-            else:
-                # Si on est pile au centre, utiliser la perpendiculaire
-                outward = perp
-            
-            # Point de contournement : sur le cercle élargi
-            avoidance_2d = cyl_center + outward * cyl_radius
-        
-        # Altitude : moyenne entre start et target, mais au-dessus du cylindre si nécessaire
-        avg_altitude = (start_pos[2] + target_pos[2]) / 2
-        min_altitude = cylinder['height'] + safety_margin
-        avoidance_altitude = max(avg_altitude, min_altitude)
-        
-        return np.array([avoidance_2d[0], avoidance_2d[1], avoidance_altitude])

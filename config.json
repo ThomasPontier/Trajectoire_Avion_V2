@@ -37,8 +37,8 @@
     "aircraft": {
         "type": "light",
         "position": {
-            "x": 160.0,
-            "y": 160.0,
+            "x": 130.0,
+            "y": 180.0,
             "z": 4.0
         },
         "speed": 180.0,
@@ -47,6 +47,6 @@
         "max_descent_slope": -10.0
     },
     "simulation": {
-        "num_trajectories": 2
+        "num_trajectories": 4
     }
 }

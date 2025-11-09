@@ -18,6 +18,7 @@ Application standalone de simulation et visualisation de trajectoires aériennes
 - [Fonctionnalités](#-fonctionnalités)
 - [Guide d'Utilisation](#-guide-dutilisation)
 - [Calcul des Trajectoires](#-calcul-des-trajectoires)
+- [Logique détaillée (Document séparé)](#-logique-détaillée-document-séparé)
 - [Génération de l'Exécutable](#-génération-de-lexécutable)
 - [Configuration](#-configuration)
 - [Développement](#-développement)
@@ -423,6 +424,24 @@ Le simulateur implémente un **système de sécurité à 5 niveaux** pour garant
 - ✅ **Algorithme d'évitement latéral** progressif avec escalade
 - ✅ **Préservation de l'altitude** pour éviter les obstacles
 - ✅ **Refus catégorique** des trajectoires à risque de collision
+
+---
+
+## 🧠 Logique détaillée (Document séparé)
+
+Pour une explication schématique approfondie (diagrammes ASCII, flux décisionnel, description de chaque fonction de calcul), consultez le fichier dédié :
+
+`docs/logique_trajectoire.md`
+
+Ce document couvre :
+1. Vue d'ensemble du pipeline
+2. Modes de calcul (standard, virages réalistes, tours automatiques)
+3. Gestion de l'altitude (palier → transition → descente → lissage)
+4. Évitement d'obstacles (waypoints tangents + recalcul avec marges)
+5. Liste exhaustive des fonctions et leur rôle
+6. Pistes d'amélioration futures
+
+> Astuce : ouvrez-le dans VS Code avec l'aperçu Markdown pour profiter de la mise en forme.
 - ✅ **Rapport de sécurité détaillé** pour chaque simulation
 - ✅ **Analyse en temps réel** de la viabilité des trajectoires
 
