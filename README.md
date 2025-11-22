@@ -1,4 +1,4 @@
-# 🛩️ Simulateur de Trajectoire d'Avion
+# Simulateur de Trajectoire d'Avion
 
 
 
@@ -10,7 +10,7 @@ Simulation et visualisation de trajectoires aériennes optimales pour l'approche
 ---
 
 
-## 🎯 Description
+## Description
 
 Calculez et visualisez en 3D la trajectoire optimale d'un avion vers le FAF (Final Approach Fix) :
 
@@ -23,7 +23,7 @@ Calculez et visualisez en 3D la trajectoire optimale d'un avion vers le FAF (Fin
 
 ---
 
-## 🚀 Installation 
+## Installation 
 
 ### Code Source (Développeurs)
 
@@ -36,40 +36,33 @@ python main.py
 
 ---
 
-## ✨ Interface
+## Interface
 
 ### 4 Onglets Principaux
 
-**🌍 Configuration**
+**Configuration**
 - Environnement (dimensions, aéroport, FAF)
 - Obstacles cylindriques 
 - Types d'avions (léger/commercial/cargo)
 - Simulations multiples (1-50 trajectoires)
 
-**📦 Vue 3D**
+**Vue 3D**
 - Visualisation interactive
 - Navigation : rotation, zoom, pan
 - Trajectoire colorée par phase
 
-**📐 Vues 2D**
+**Vues 2D**
 - Plans XY, XZ, YZ
 - Projections orthogonales
 
-**📊 Paramètres**
+**Paramètres**
 - Graphiques altitude/vitesse/pente
 - Analyse temporelle
 
 ---
 
-## 🎮 Utilisation
 
-1. **Lancer** l'application
-2. **Configurer** l'environnement et l'avion
-3. **Calculer** une trajectoire ou plusieurs simulations
-4. **Visualiser** en 3D et analyser les résultats
-
-
-## 🔨 Build Exécutable
+## Build Exécutable
 
 ```powershell
 python build_exe.py
@@ -79,7 +72,7 @@ Génère `SimulateurTrajectoireAvion.exe` (~150 MB) standalone.
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Fichier `config.json` auto-sauvegardé :
 - Dimensions environnement
