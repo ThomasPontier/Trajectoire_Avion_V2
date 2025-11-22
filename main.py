@@ -188,20 +188,16 @@ class FlightSimulatorGUI:
             color = colors[i % len(colors)]
             ax.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2], 
                    color=color, linewidth=2.0, alpha=0.7, label=f'Trajectoire {i+1}')
-            # Marquer le point de départ
             ax.scatter([trajectory[0, 0]], [trajectory[0, 1]], [trajectory[0, 2]], 
                       c=color, marker='o', s=80, alpha=0.8, edgecolors='black', linewidths=1)
-        print(f"✅ {len(self.multiple_trajectories)} TRAJECTOIRES MULTIPLES AFFICHÉES\n")
     
     def _draw_failed_positions(self, ax):
         """Dessine les positions des tentatives échouées"""
         if not hasattr(self, 'failed_trajectory_positions') or not self.failed_trajectory_positions:
             return
         
-        print(f"\n💥 AFFICHAGE DE {len(self.failed_trajectory_positions)} POSITIONS ÉCHOUÉES")
         for i, failed_pos in enumerate(self.failed_trajectory_positions):
             pos, attempt_num = failed_pos['position'], failed_pos['attempt_number']
-            print(f"   ❌ Position échouée {i+1} (tentative #{attempt_num}): ({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f})")
             ax.scatter([pos[0]], [pos[1]], [pos[2]], c='red', marker='x', s=150, 
                       alpha=0.8, linewidths=3, label=f'Échec #{attempt_num}' if i == 0 else '')
             ax.text(pos[0], pos[1], pos[2] + 0.2, f'#{attempt_num}', 
@@ -230,48 +226,37 @@ class FlightSimulatorGUI:
         import os
         import sys
         try:
-            # Déterminer le répertoire de l'application
             if getattr(sys, 'frozen', False):
-                # Application empaquetée avec PyInstaller (onefile extrait dans _MEIPASS)
                 app_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
             else:
-                # Script Python normal
                 app_dir = os.path.dirname(os.path.abspath(__file__))
+            app_dir = os.path.dirname(os.path.abspath(__file__))
             
-            # Chercher d'abord un fichier .ico (meilleur pour Windows)
             ico_path = os.path.join(app_dir, 'logo.ico')
             png_path = os.path.join(app_dir, 'logo.png')
             
             icon_loaded = False
             
-            # MÉTHODE SPÉCIALE POUR WINDOWS 10 : Utiliser ctypes pour définir l'AppUserModelID
-            # Cela force Windows à utiliser l'icône de l'exécutable dans la barre des tâches
             if sys.platform == 'win32':
                 try:
                     import ctypes
-                    # Définir un AppUserModelID unique pour cette application
-                    # Cela aide Windows 10/11 à identifier correctement l'application
                     myappid = 'estaca.trajectoireavion.simulateur.v1'
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
                 except Exception as e:
                     pass
             
-            # Méthode 1: Utiliser .ico avec iconbitmap (Windows)
             if sys.platform == 'win32' and os.path.exists(ico_path):
                 try:
-                    # Utiliser le chemin absolu
                     abs_ico_path = os.path.abspath(ico_path)
                     self.root.iconbitmap(default=abs_ico_path)
                     icon_loaded = True
                 except Exception as e:
                     pass
             
-            # Méthode 2: Utiliser PNG avec iconphoto (multiplateforme)
             if os.path.exists(png_path):
                 try:
                     from PIL import Image, ImageTk
                     logo_image = Image.open(png_path)
-                    # Créer plusieurs tailles pour meilleure qualité
                     sizes = [(16, 16), (32, 32), (48, 48), (64, 64)]
                     photos = []
                     for size in sizes:
@@ -279,10 +264,7 @@ class FlightSimulatorGUI:
                         photo = ImageTk.PhotoImage(img_resized)
                         photos.append(photo)
                     
-                    # Définir l'icône pour la fenêtre (utiliser la plus grande)
                     self.root.iconphoto(True, *photos)
-                    
-                    # Garder les références pour éviter le garbage collection
                     self.root._icon_photos = photos
                     
                     icon_loaded = True
@@ -290,7 +272,7 @@ class FlightSimulatorGUI:
                     pass
             
             if not icon_loaded:
-                print("⚠️  Aucun logo trouvé ou chargé (.ico ou .png)")
+                pass
                 
         except Exception as e:
             print(f"⚠️  Impossible de charger le logo: {e}")
@@ -300,36 +282,24 @@ class FlightSimulatorGUI:
     def _on_closing(self):
         """Gestionnaire de fermeture de la fenêtre"""
         try:
-            # Sauvegarder la configuration avant de fermer
             self._save_config()
-            print("💾 Configuration sauvegardée avant fermeture")
         except Exception as e:
-            print(f"⚠️  Erreur lors de la sauvegarde: {e}")
+            pass
         finally:
-            # Fermer l'application
             self.root.destroy()
         
     def _create_ui(self):
         """Crée l'interface utilisateur"""
         
-        # Configuration du grid principal
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         
-        # Notebook principal avec 4 onglets
         self.main_notebook = ttk.Notebook(self.root)
         self.main_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Onglet 1: Configuration
         self._create_config_tab()
-        
-        # Onglet 2: Vue 3D
         self._create_3d_view_tab()
-        
-        # Onglet 3: Vues 2D (XY, XZ, YZ)
         self._create_2d_views_tab()
-        
-        # Onglet 4: Paramètres (graphiques)
         self._create_parameters_tab()
         
     def _create_config_tab(self):
@@ -338,32 +308,26 @@ class FlightSimulatorGUI:
         config_frame = ttk.Frame(self.main_notebook)
         self.main_notebook.add(config_frame, text="⚙️ Configuration")
         
-        # Créer un PanedWindow pour diviser l'écran en 2 parties (gauche et droite)
         paned = ttk.PanedWindow(config_frame, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Partie gauche : Notebook de configuration
         left_frame = ttk.Frame(paned)
         paned.add(left_frame, weight=1)
         
         config_notebook = ttk.Notebook(left_frame)
         config_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Sous-onglet 1: Environnement
         env_frame = ttk.Frame(config_notebook, padding="10")
         config_notebook.add(env_frame, text="🌍 Environnement")
         self._create_environment_config(env_frame)
         
-        # Sous-onglet 2: Obstacles
         obstacles_frame = ttk.Frame(config_notebook, padding="10")
         config_notebook.add(obstacles_frame, text="🚧 Obstacles")
         self._create_obstacles_config(obstacles_frame)
         
-        # Sous-onglet 3: Avion (avec scrollbar) - Optimisé
         aircraft_main_frame = ttk.Frame(config_notebook)
         config_notebook.add(aircraft_main_frame, text="✈️ Avion")
         
-        # Canvas scrollable avec configuration automatique
         aircraft_canvas = tk.Canvas(aircraft_main_frame, highlightthickness=0)
         aircraft_scrollbar = ttk.Scrollbar(aircraft_main_frame, orient="vertical", command=aircraft_canvas.yview)
         aircraft_scrollable_frame = ttk.Frame(aircraft_canvas, padding="10")
@@ -377,25 +341,20 @@ class FlightSimulatorGUI:
         
         self._create_aircraft_config(aircraft_scrollable_frame)
         
-        # Partie droite : Vue 3D de prévisualisation
         right_frame = ttk.Frame(paned)
         paned.add(right_frame, weight=1)
         
-        # Titre pour la prévisualisation
         preview_label = ttk.Label(right_frame, text="📦 Prévisualisation 3D", 
                                  font=('Arial', 12, 'bold'))
         preview_label.pack(pady=5)
         
-        # Créer une figure 3D pour la prévisualisation
         self.fig_3d_config = plt.Figure(figsize=(8, 6))
         self.ax_3d_config = self.fig_3d_config.add_subplot(111, projection='3d')
         
-        # Canvas pour la figure 3D dans la configuration
         self.canvas_3d_config = FigureCanvasTkAgg(self.fig_3d_config, master=right_frame)
         self.canvas_3d_config.draw()
         self.canvas_3d_config.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Ajouter une barre d'outils de navigation pour la vue config
         from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
         toolbar_config = NavigationToolbar2Tk(self.canvas_3d_config, right_frame)
         toolbar_config.update()
@@ -406,16 +365,13 @@ class FlightSimulatorGUI:
         view_3d_frame = ttk.Frame(self.main_notebook)
         self.main_notebook.add(view_3d_frame, text="📦 Vue 3D")
         
-        # Créer la figure 3D
         self.fig_3d = plt.Figure(figsize=(12, 8))
         self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
         
-        # Canvas pour la figure 3D
         self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, master=view_3d_frame)
         self.canvas_3d.draw()
         self.canvas_3d.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Ajouter la barre d'outils de navigation
         from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
         toolbar_3d = NavigationToolbar2Tk(self.canvas_3d, view_3d_frame)
         toolbar_3d.update()
@@ -426,10 +382,8 @@ class FlightSimulatorGUI:
         views_2d_frame = ttk.Frame(self.main_notebook)
         self.main_notebook.add(views_2d_frame, text="📐 Vues 2D")
         
-        # Créer une figure avec 3 sous-graphiques
         self.fig_2d = plt.Figure(figsize=(14, 10))
         
-        # Vue de dessus (XY)
         self.ax_xy = self.fig_2d.add_subplot(221)
         self.ax_xy.set_title("Vue de dessus (Plan XY)", fontsize=10, fontweight='bold')
         self.ax_xy.set_xlabel("X (km)")
@@ -437,32 +391,27 @@ class FlightSimulatorGUI:
         self.ax_xy.grid(True, alpha=0.3)
         self.ax_xy.set_aspect('equal')
         
-        # Vue de face (XZ)
         self.ax_xz = self.fig_2d.add_subplot(223)
         self.ax_xz.set_title("Vue de face (Plan XZ)", fontsize=10, fontweight='bold')
         self.ax_xz.set_xlabel("X (km)")
         self.ax_xz.set_ylabel("Z (altitude, km)")
         self.ax_xz.grid(True, alpha=0.3)
         
-        # Vue de côté (YZ)
         self.ax_yz = self.fig_2d.add_subplot(222)
         self.ax_yz.set_title("Vue de côté (Plan YZ)", fontsize=10, fontweight='bold')
         self.ax_yz.set_xlabel("Y (km)")
         self.ax_yz.set_ylabel("Z (altitude, km)")
         self.ax_yz.grid(True, alpha=0.3)
         
-        # Espace pour légende
         self.ax_legend = self.fig_2d.add_subplot(224)
         self.ax_legend.axis('off')
         
         self.fig_2d.tight_layout(pad=3.0)
         
-        # Canvas pour les vues 2D
         self.canvas_2d = FigureCanvasTkAgg(self.fig_2d, master=views_2d_frame)
         self.canvas_2d.draw()
         self.canvas_2d.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Ajouter la barre d'outils de navigation (pour zoom)
         from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
         toolbar_2d = NavigationToolbar2Tk(self.canvas_2d, views_2d_frame)
         toolbar_2d.update()
@@ -473,24 +422,20 @@ class FlightSimulatorGUI:
         params_frame = ttk.Frame(self.main_notebook)
         self.main_notebook.add(params_frame, text="📊 Paramètres")
         
-        # Créer la figure pour les paramètres
         self.fig_params = plt.Figure(figsize=(14, 8))
         
-        # Canvas
         self.canvas_params = FigureCanvasTkAgg(self.fig_params, master=params_frame)
         self.canvas_params.draw()
         self.canvas_params.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Barre d'outils
         from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
         toolbar_params = NavigationToolbar2Tk(self.canvas_params, params_frame)
         toolbar_params.update()
         
     def _create_environment_config(self, parent):
-        """Crée la configuration de l'environnement - Optimisé avec méthodes utilitaires"""
+        """Crée la configuration de l'environnement"""
         row = 0
         
-        # Dimensions de l'espace aérien
         row = self._create_section_title(parent, row, "Dimensions de l'Espace Aérien")
         self.env_size_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["size_x"])
         self.env_size_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["size_y"])
@@ -500,7 +445,6 @@ class FlightSimulatorGUI:
         row = self._create_label_entry(parent, row, "Hauteur Z (km):", self.env_size_z_var)
         row = self._create_separator(parent, row)
         
-        # Position de l'Aéroport
         row = self._create_section_title(parent, row, "Position de l'Aéroport")
         self.airport_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["airport"]["x"])
         self.airport_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["airport"]["y"])
@@ -510,7 +454,6 @@ class FlightSimulatorGUI:
         row = self._create_label_entry(parent, row, "Aéroport Z (km):", self.airport_z_var)
         row = self._create_separator(parent, row)
         
-        # Position du Point FAF
         row = self._create_section_title(parent, row, "Position du Point FAF")
         self.faf_x_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["faf"]["x"])
         self.faf_y_var = tk.DoubleVar(value=DEFAULT_CONFIG["environment"]["faf"]["y"])
@@ -520,18 +463,15 @@ class FlightSimulatorGUI:
         row = self._create_label_entry(parent, row, "FAF Z (km):", self.faf_z_var)
         row = self._create_separator(parent, row)
         
-        # Bouton pour appliquer la configuration
         ttk.Button(parent, text="🔄 Appliquer Configuration", 
                   command=self._apply_environment_config).grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
         row += 1
         
-        # Label d'info
         self.env_info_label = ttk.Label(parent, text="", font=('Arial', 8), foreground='green')
         self.env_info_label.grid(row=row, column=0, columnspan=2, sticky=tk.W, pady=2)
     
     def _create_obstacles_config(self, parent):
-        """Crée l'onglet de gestion des obstacles (cylindres) - Optimisé"""
-        # Canvas scrollable
+        """Crée l'onglet de gestion des obstacles (cylindres)"""
         canvas = tk.Canvas(parent, borderwidth=0, highlightthickness=0)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
@@ -1493,8 +1433,6 @@ class FlightSimulatorGUI:
         
         self.fig_params.clear()
         
-        print(f"\n📊 AFFICHAGE DES PARAMÈTRES DE {len(self.multiple_trajectories_params)} TRAJECTOIRES")
-        
         # Couleurs distinctes pour les trajectoires multiples
         colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
         
@@ -1505,7 +1443,6 @@ class FlightSimulatorGUI:
         ax1.set_title('Altitude au cours du temps (Toutes trajectoires)', fontsize=10, fontweight='bold')
         ax1.grid(True, alpha=0.3)
         
-        # Graphique 2: Pente
         ax2 = self.fig_params.add_subplot(2, 2, 2)
         ax2.set_xlabel('Temps (s)', fontsize=9)
         ax2.set_ylabel('Pente (°)', fontsize=9)
@@ -1513,7 +1450,6 @@ class FlightSimulatorGUI:
         ax2.grid(True, alpha=0.3)
         ax2.axhline(y=0, color='k', linestyle='--', alpha=0.3)
         
-        # Graphique 3: Taux de virage (si disponible)
         ax3 = self.fig_params.add_subplot(2, 2, 3)
         ax3.set_xlabel('Temps (s)', fontsize=9)
         ax3.set_ylabel('Taux de virage (°/s)', fontsize=9)
@@ -1521,15 +1457,13 @@ class FlightSimulatorGUI:
         ax3.grid(True, alpha=0.3)
         ax3.axhline(y=0, color='k', linestyle='--', alpha=0.3)
         
-        # Dessiner chaque trajectoire
         for i, params in enumerate(self.multiple_trajectories_params):
             color = colors[i % len(colors)]
             alpha = 0.7 if len(self.multiple_trajectories_params) <= 5 else 0.5
             linewidth = 1.5 if len(self.multiple_trajectories_params) <= 5 else 1.0
             
-            label = f'Traj. {i+1}' if i < 10 else ''  # Limiter les labels
+            label = f'Traj. {i+1}' if i < 10 else ''
             
-            # Altitude
             if 'time' in params and 'altitude' in params:
                 ax1.plot(params['time'], params['altitude'], color=color, 
                         linewidth=linewidth, alpha=alpha, label=label)
@@ -1544,14 +1478,12 @@ class FlightSimulatorGUI:
                 ax3.plot(params['time'], params['turn_rate'], color=color, 
                         linewidth=linewidth, alpha=alpha, label=label)
         
-        # Afficher les limites de pente si l'avion existe
         if self.aircraft:
             ax2.axhline(y=self.aircraft.max_climb_slope, color='green', 
                        linestyle='--', alpha=0.5, label=f'Montée max ({self.aircraft.max_climb_slope}°)')
             ax2.axhline(y=self.aircraft.max_descent_slope, color='red', 
                        linestyle='--', alpha=0.5, label=f'Descente max ({self.aircraft.max_descent_slope}°)')
         
-        # Légendes (seulement si pas trop de trajectoires)
         if len(self.multiple_trajectories_params) <= 10:
             ax1.legend(fontsize=7, loc='best')
             ax2.legend(fontsize=7, loc='best')
@@ -1559,8 +1491,6 @@ class FlightSimulatorGUI:
         
         self.fig_params.tight_layout(pad=2.0)
         self.canvas_params.draw()
-        
-        print(f"✅ PARAMÈTRES DE {len(self.multiple_trajectories_params)} TRAJECTOIRES AFFICHÉS\n")
         
     def _on_aircraft_type_changed(self, event=None):
         """Appelé quand le type d'avion change"""
@@ -1808,12 +1738,8 @@ class FlightSimulatorGUI:
         
         try:
             for i in range(num_trajectories):
-                print(f"\n🎲 === SIMULATION ALÉATOIRE {i+1}/{num_trajectories} ===")
-                
-                # Générer position aléatoire valide
                 random_pos = self._generate_random_position()
                 if random_pos is None:
-                    print(f"❌ Impossible de générer une position valide pour la simulation {i+1}")
                     failed_positions += 1
                     failed_attempts.append(i+1)
                     # Stocker l'échec de génération de position
@@ -1827,13 +1753,6 @@ class FlightSimulatorGUI:
                 
                 x, y, z, heading = random_pos
                 
-                # Calculer la distance au FAF en XY pour confirmation
-                faf_pos = self.environment.faf_position
-                distance_xy = np.sqrt((x - faf_pos[0])**2 + (y - faf_pos[1])**2)
-                print(f"📍 Position générée: ({x:.1f}, {y:.1f}, {z:.1f}) km, cap: {heading:.0f}°")
-                print(f"   📏 Distance au FAF (plan XY): {distance_xy:.1f} km")
-                
-                # Créer un avion temporaire à cette position
                 from aircraft import Aircraft, AircraftType
                 aircraft_type = self.aircraft_type_var.get() if hasattr(self, 'aircraft_type_var') else "commercial"
                 speed = self.speed_var.get() if hasattr(self, 'speed_var') else 250.0
@@ -1847,7 +1766,6 @@ class FlightSimulatorGUI:
                     max_descent_slope=self.max_descent_slope_var.get() if hasattr(self, 'max_descent_slope_var') else None
                 )
                 
-                # Calculer la trajectoire avec courbes de Bézier
                 calculator = TrajectoryCalculator(self.environment)
                 
                 try:
@@ -1855,12 +1773,8 @@ class FlightSimulatorGUI:
                         temp_aircraft, self.cylinders
                     )
                     
-                    # Vérifier si la trajectoire a pu être calculée sans collision
                     if trajectory is None:
-                        print(f"❌ Erreur simulation {i+1}: Impossible d'éviter les obstacles depuis cette position")
-                        failed_positions += 1
                         failed_attempts.append(i+1)
-                        # Stocker la position de l'échec avec le numéro de tentative
                         self.failed_trajectory_positions.append({
                             'position': [x, y, z],
                             'heading': heading,
@@ -1869,18 +1783,13 @@ class FlightSimulatorGUI:
                         })
                         continue
                     
-                    # Stocker la trajectoire sûre
                     self.multiple_trajectories.append(trajectory)
                     self.multiple_trajectories_params.append(trajectory_params)
                     successful_simulations += 1
                     
-                    print(f"✅ Simulation {i+1} réussie - {len(trajectory)} points calculés")
-                    
                 except Exception as e:
-                    print(f"❌ Erreur simulation {i+1}: {str(e)}")
                     failed_positions += 1
                     failed_attempts.append(i+1)
-                    # Stocker la position de l'échec avec le numéro de tentative
                     self.failed_trajectory_positions.append({
                         'position': [x, y, z],
                         'heading': heading,
@@ -1889,7 +1798,6 @@ class FlightSimulatorGUI:
                     })
                     continue
             
-            # Restaurer l'avion original
             if original_aircraft_config:
                 self.aircraft = Aircraft(
                     aircraft_type=getattr(AircraftType, original_aircraft_config['aircraft_type'].upper()),
@@ -1898,9 +1806,8 @@ class FlightSimulatorGUI:
                     heading=original_aircraft_config['heading']
                 )
             
-            # Mettre à jour l'affichage
             self._draw_environment()
-            self._draw_multiple_parameters()  # Afficher les paramètres de toutes les trajectoires
+            self._draw_multiple_parameters()
             
             # Message de résultats
             if successful_simulations > 0:

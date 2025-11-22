@@ -19,11 +19,6 @@ def clean_build_dirs():
             except PermissionError:
                 print(f"⚠️  Impossible de supprimer {dir_name}/ (fichiers en cours d'utilisation)")
                 print(f"   Le build continuera avec les fichiers existants")
-    
-    # Supprimer les fichiers .spec anciens si besoin de regénérer
-    # spec_file = 'SimulateurTrajectoireAvion.spec'
-    # if os.path.exists(spec_file):
-    #     os.remove(spec_file)
 
 
 def check_dependencies():
@@ -63,7 +58,6 @@ def build_executable():
     # Nettoyer les anciens builds
     clean_build_dirs()
     
-    # Vérifier que le logo existe
     logo_path = "logo.png"
     if not os.path.exists(logo_path):
         print(f"⚠️  Attention : {logo_path} introuvable")
@@ -71,22 +65,18 @@ def build_executable():
         icon_option = []
     else:
         print(f"✅ Logo trouvé : {logo_path}")
-        # Convertir le logo en .ico si nécessaire (pour Windows)
         try:
-            # Utiliser create_icon.py pour créer un vrai ICO multi-résolutions
-            print("🖼️  Création de l'icône multi-résolutions (16, 32, 48, 64, 128, 256)...")
+            print("🖼️  Création de l'icône multi-résolutions...")
             
-            # Importer la fonction depuis create_icon.py
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             from create_icon import create_multi_resolution_ico
             
             icon_path = "logo.ico"
             if create_multi_resolution_ico(logo_path, icon_path):
-                # Vérifier que le fichier créé a une taille raisonnable
                 ico_size = os.path.getsize(icon_path)
-                if ico_size > 10000:  # Au moins 10 Ko pour un vrai multi-résolutions
+                if ico_size > 10000:
                     icon_option = ['--icon', icon_path]
-                    print(f"✅ Icône multi-tailles créée : {icon_path} ({ico_size:,} octets, 6 résolutions)")
+                    print(f"✅ Icône créée : {icon_path} ({ico_size:,} octets)")
                 else:
                     print(f"⚠️  Icône créée mais semble incomplète ({ico_size} octets)")
                     print("   L'exécutable sera créé sans icône")
@@ -103,7 +93,7 @@ def build_executable():
     
     # Vérifier que config.json existe
     if not os.path.exists("config.json"):
-        print("⚠️  config.json introuvable, création d'un fichier par défaut...")
+        print("⚠️  config.json introuvable, création par défaut...")
         default_config = """{
     "environment": {
         "size_x": 100.0,
@@ -136,17 +126,14 @@ def build_executable():
             f.write(default_config)
         print("✅ config.json créé")
     
-    # Ajouter les fichiers logo aux données
     data_files = ['--add-data=config.json;.']
     if os.path.exists('logo.ico'):
         data_files.append('--add-data=logo.ico;.')
-        print("✅ logo.ico sera inclus dans l'exécutable")
+        print("✅ logo.ico inclus")
     if os.path.exists('logo.png'):
         data_files.append('--add-data=logo.png;.')
-        print("✅ logo.png sera inclus dans l'exécutable")
+        print("✅ logo.png inclus")
     
-    # Commande PyInstaller
-    # S'assurer que l'exécutable précédent n'est pas verrouillé
     target_exe = os.path.join('dist', 'SimulateurTrajectoireAvion.exe')
     if os.path.exists(target_exe):
         try:
@@ -156,12 +143,11 @@ def build_executable():
             print(f"❌ Impossible de supprimer {target_exe} (fichier en cours d'utilisation).\n   Fermez l'application SimulateurTrajectoireAvion.exe si elle est en cours et relancez le build.")
             return False
 
-    # Utiliser l'interpréteur courant pour garantir la bonne version de PyInstaller
     cmd = [
         sys.executable, '-m', 'PyInstaller',
         '--name=SimulateurTrajectoireAvion',
-        '--onefile',                    # Un seul fichier exécutable
-        '--windowed',                   # Pas de console (interface graphique)
+        '--onefile',
+        '--windowed',
     ] + data_files + [
         '--hidden-import=numpy',
         '--hidden-import=matplotlib',
@@ -172,11 +158,10 @@ def build_executable():
         '--hidden-import=PIL._tkinter_finder',
         '--collect-all=matplotlib',
         '--collect-all=numpy',
-        '--optimize=2',                 # Optimisation Python
-        '--noupx',                      # Désactiver UPX (plus compatible)
+        '--optimize=2',
+        '--noupx',
     ] + icon_option + ['main.py']
 
-    # Vérifier l'existence du fichier d'entrée
     entry_point = os.path.join(os.getcwd(), 'main.py')
     if not os.path.isfile(entry_point):
         print(f"❌ Fichier d'entrée introuvable: {entry_point}")

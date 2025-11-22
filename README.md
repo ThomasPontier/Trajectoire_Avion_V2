@@ -68,15 +68,6 @@ python main.py
 3. **Calculer** une trajectoire ou plusieurs simulations
 4. **Visualiser** en 3D et analyser les résultats
 
-### Types d'Avions
-
-| Type | Vitesse | Pente Max | Rayon Min |
-|------|---------|-----------|-----------|
-| 🛩️ Léger | 180 km/h | ±15°/-10° | 0.4 km |
-| ✈️ Commercial | 250 km/h | ±10°/-6° | 0.8 km |
-| 🛫 Cargo | 220 km/h | ±8°/-5° | 1.0 km |
-
----
 
 ## 🔨 Build Exécutable
 

@@ -208,15 +208,12 @@ class TrajectoryCalculator:
         waypoints_2d = [initial_end_point]
         
         if cylinders:
-            # Calculer les waypoints de contournement
             avoidance_waypoints = self._calculate_avoidance_waypoints(
                 initial_end_point, faf_pos[:2], cylinders, start_pos[2]
             )
             waypoints_2d.extend(avoidance_waypoints)
         
         waypoints_2d.append(faf_pos[:2])
-        
-        print(f"   🛤️  Trajectoire avec {len(waypoints_2d)} points de passage")
         
         # Construire des courbes de Bézier entre chaque paire de waypoints
         altitude_start = start_pos[2]
@@ -329,13 +326,10 @@ class TrajectoryCalculator:
         # Dernière position exactement au FAF
         trajectory[-1] = faf_pos
         
-        # Vérification des collisions - si collision détectée, échec immédiat
         if cylinders:
             has_collision, colliding_indices, first_collision_idx = self._check_trajectory_collision(trajectory, cylinders)
             
             if has_collision:
-                print(f"   ❌ Collision détectée avec obstacle(s)")
-                print(f"   💡 Impossible d'éviter les obstacles depuis cette position")
                 return None, {}
         
         n_turn_points = len(trajectory) - len(initial_segment)
@@ -490,11 +484,8 @@ class TrajectoryCalculator:
                 entry_point = entry_base + side * perp * offset_distance
                 exit_point = exit_base + side * perp * offset_distance
                 
-                # Vérifier que les points ne sont pas DANS le cylindre
                 dist_entry = np.linalg.norm(entry_point - cyl_center)
                 dist_exit = np.linalg.norm(exit_point - cyl_center)
-                
-                # Si trop proche, pousser au rayon + marge minimale
                 min_safe_distance = cylinder['radius'] + safety_margin
                 if dist_entry < min_safe_distance:
                     entry_point = cyl_center + (entry_point - cyl_center) / dist_entry * min_safe_distance
