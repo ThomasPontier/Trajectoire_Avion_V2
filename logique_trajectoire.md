@@ -1,4 +1,4 @@
-﻿# Logique de Détermination de la Trajectoire
+# Logique de Détermination de la Trajectoire
 
 Ce document résume visuellement et schématiquement la logique utilisée pour calculer la trajectoire optimale vers le point FAF (Final Approach Fix) en respectant les contraintes de pente, d'alignement sur l'axe piste et d'évitement d'obstacles cylindriques.
 
@@ -29,16 +29,16 @@ Sorties principales:
 │     Environment        │◄────►│        Aircraft          │
 │  airport_position      │      │ specs (pentes, vitesses) │
 │  faf_position          │      │ position, heading        │
-└──────────┬─────────────┘      └──────────┬──────────────┘
+└──────────┬─────────────┘      └──────────┬───────────────┘
            │                                │
            └───────────────┬────────────────┘
                            ▼
                  ┌─────────────────────┐
-                 │ TrajectoryCalculator │
+                 │ TrajectoryCalculator│
                  └─────────┬───────────┘
                            │
                            ▼
-              calculate_trajectory (MODE UNIQUE)
+                  calculate_trajectory 
                            │
                            ▼
         (courbes de Bézier + évitement + descente)
@@ -50,9 +50,7 @@ Sorties principales:
 ---
 ## 3. Logique détaillée du mode principal (`calculate_trajectory`)
 
-**MODE UNIQUE (100% des cas) :**
-
-Le système utilise **toujours** le mode avec courbes de Bézier qui calcule une trajectoire progressive vers le FAF :
+Le système utilise le mode avec courbes de Bézier qui calcule une trajectoire progressive vers le FAF :
 
 1. Calcule l'axe piste: vecteur (FAF → Aéroport) = direction de l'approche
 2. Calcule angle entre cap actuel et axe piste
@@ -64,8 +62,6 @@ Le système utilise **toujours** le mode avec courbes de Bézier qui calcule une
    - Évitement obstacles: génération de waypoints de contournement `_calculate_avoidance_waypoints`
 5. Validation collision (`_check_trajectory_collision`). **Si collision détectée : échec immédiat**
 6. Calcul des paramètres finaux via `_calculate_parameters`
-
-**Important :** Il n'y a qu'un seul mode de fonctionnement. La vitesse reste constante tout le long de la trajectoire. **Aucune tentative de recalcul en cas de collision** - si la trajectoire n'est pas valide du premier coup, elle est considérée comme impossible.
 
 ---
 ## 4. Gestion altitude (concept transversal)
@@ -94,17 +90,13 @@ Fonctions clés:
 - `_check_trajectory_collision`: validation globale
 - `_check_collision_with_cylinder`: test d'un point individuel
 
-**Stratégie en cas d'échec:**
-- Si collision détectée : **échec immédiat**, pas de tentatives de recalcul
-- Message à l'utilisateur pour modifier la position de l'avion ou les obstacles
-
 ---
 ## 6. Liste des fonctions et rôles (référence rapide)
 
 ### TrajectoryCalculator
 
 **Calcul de trajectoire principal :**
-- `calculate_trajectory(aircraft, cylinders)`: Trajectoire avec courbes de Bézier et alignement sur l'axe piste **[MODE UNIQUE]**
+- `calculate_trajectory(aircraft, cylinders)`: Trajectoire avec courbes de Bézier et alignement sur l'axe piste 
 
 **Construction de trajectoire :**
 - `_calculate_runway_intercept_point(...)`: Point d'interception sur axe avant FAF
@@ -160,27 +152,18 @@ Environment:
           ▼
         Fin
 ```
-
 ---
-## 8. Points clés de robustesse
-- Lissage intensif pour éviter les cassures d'altitude (smoothstep haute commande, cosinus, moyenne mobile)
-- Recalcule automatique si collision (marges croissantes)
-- Séparation claire des phases (initial, transition, descente, finale)
-- Adaptation dynamique selon distance disponible vs pente imposée
+## 8. Résumé éclair (TL;DR)
 
-
----
-## 9. Résumé éclair (TL;DR)
-
-Le système utilise **un mode unique** qui calcule une trajectoire avec courbes de Bézier pour un virage progressif vers le FAF. La trajectoire gère : orientation vers l'axe piste, altitude (palier → transition ultra-douce → descente à pente max), et évitement d'obstacles via waypoints tangents. Chaque segment est densément échantillonné et lissé pour une représentation fluide. **La vitesse reste constante tout le long de la trajectoire.**
+Le système utilise qui calcule une trajectoire avec courbes de Bézier pour un virage progressif vers le FAF. La trajectoire gère : orientation vers l'axe piste, altitude (palier → transition ultra-douce → descente à pente max), et évitement d'obstacles via waypoints tangents. Chaque segment est densément échantillonné et lissé pour une représentation fluide. **La vitesse reste constante tout le long de la trajectoire.**
 
 ---
 
-## 10. Schéma fonctionnel ultra détaillé
+## 9. Schéma fonctionnel ultra détaillé
 
 Ce schéma expose le pipeline complet, les décisions clés, et les fonctions exactes appelées à chaque étape.
 
-### 10.1 Diagramme global (Mermaid)
+### 9.1 Diagramme global (Mermaid)
 
 ```mermaid
 flowchart TD
@@ -223,46 +206,99 @@ flowchart TD
    OUT3 --> VIZ["Visualisation 3D/2D<br/>Matplotlib + Tkinter"]
 ```
 
-### 10.2 Cartographie fonctionnelle (ASCII + I/O)
+### 9.2 Cartographie fonctionnelle (ASCII + I/O)
 
 ```text
-[Inputs]
-   - Aircraft: position[x,y,z], speed, heading, type → specs(max_descent_slope, max_bank_angle, ...)
-   - Environment: airport_position[x,y,z], faf_position[x,y,z], sizeX/Y/Z
-   - Obstacles: list[{x, y, radius, height}]
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                   INPUTS                                      ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 
-[Mode Unique : Courbes de Bézier]
-   1) _calculate_runway_intercept_point(start_2D, current_dir, airport_2D, faf_2D, runway_dir, angle)
-       → intercept_2D
-   2) _build_trajectory_with_runway_alignment(..., cylinders)
-       → segments:
-            - initial_segment (rectiligne, altitude constante)
-            - pour chaque [wp_i → wp_{i+1}]: Bézier cubique 2D
-               altitude = f(distance) avec 3 phases (palier/transition/descente)
-            - validation: _check_trajectory_collision(trajectory, cylinders)
-                  si collision → ÉCHEC IMMÉDIAT (return None)
-       → trajectory[Nx3]
-   3) _calculate_parameters(trajectory, speed) à vitesse constante
-       → time[N], altitude[N], slope[N], heading[N], turn_rate[N], distance, flight_time
+Aircraft
+   ├─ position[x, y, z]          Position 3D de l'avion
+   ├─ speed                      Vitesse (constante tout le long)
+   ├─ heading                    Cap actuel
+   └─ type → specs               Spécifications (max_descent_slope, max_bank_angle, ...)
 
-[Outputs]
-   - Trajectory: array float64 (N x 3) ou None si échec
-   - Parameters: dict{time[N], altitude[N], slope[N], heading[N], turn_rate[N], distance, flight_time} ou {} si échec
-   - Note: Vitesse constante dans tous les cas, pas de retry_trajectories
+Environment
+   ├─ airport_position[x, y, z]  Position de l'aéroport
+   ├─ faf_position[x, y, z]      Position du point FAF
+   └─ size[X, Y, Z]              Dimensions de l'espace
+
+Obstacles
+   └─ list[{x, y, radius, height}]  Liste des cylindres à éviter
+
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    MODE UNIQUE : COURBES DE BÉZIER                            ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 1 : Calcul du point d'interception                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+   _calculate_runway_intercept_point(start_2D, current_dir, airport_2D, 
+                                         faf_2D, runway_dir, angle)
+      ↓
+      ✓ intercept_2D
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 2 : Construction de la trajectoire                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+   ├─ Phase 1 : Segment initial rectiligne (altitude constante)
+   │   └─ 15-25% distance totale, borné [1-5 km]
+   │
+   ├─ Phase 2 : Courbes de Bézier entre waypoints
+   │   ├─ Pour chaque [wp_i → wp_{i+1}] : Bézier cubique 2D
+   │   ├─ Altitude = f(distance) avec 3 phases :
+   │   │   • Palier
+   │   │   • Transition (super-smoothstep 7ème degré)
+   │   │   • Descente linéaire à pente max
+   │   └─ Waypoints d'évitement si obstacles détectés
+   │
+   ├─ Validation : _check_trajectory_collision(trajectory, cylinders)
+   │   └─   Si collision → ❌ ÉCHEC IMMÉDIAT (return None)
+   │
+   └─ ✓ trajectory[N x 3]
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ÉTAPE 3 : Calcul des paramètres de vol                                     │
+└─────────────────────────────────────────────────────────────────────────────┘ 
+   ↓  [vitesse constante]
+   ✓ Profil complet :
+      • time[N]          Temps de vol en chaque point
+      • altitude[N]      Profil d'altitude
+      • slope[N]         Pentes entre points
+      • heading[N]       Cap en chaque point
+      • turn_rate[N]     Taux de virage
+      • distance         Distance totale
+      • flight_time      Temps de vol total
+
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                  OUTPUTS                                      ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+Trajectory
+└─ array float64 (N x 3)
+   • Succès : Points 3D de la trajectoire complète
+   • Échec  : None (collision impossible à éviter)
+
+Parameters
+└─ dict contenant :
+   • time[N], altitude[N], slope[N], heading[N], turn_rate[N]
+   • distance, flight_time
+   • Succès : Dictionnaire complet
+   • Échec  : {} (dictionnaire vide)
+
 ```
-
-### 10.3 Points de contrôle et échecs gérés
-- **Collisions obstacles**: détection immédiate, échec direct sans tentatives de recalcul
-- **Lissages systématiques**: transitions d'altitude (quintic/super-smoothstep 7ème degré) pour continuité
-- **Validation à chaque étape**: vérification géométrique avant génération de chaque segment
-
 ---
 
-## 11. Référence détaillée par fonction (API + algorithmes)
+## 10. Référence détaillée par fonction (API + algorithmes)
 
 Cette section documente chaque fonction avec: objectif, entrées/sorties, logique, cas limites, et notes d'implémentation. Les distances sont en km, les vitesses en km/h, les angles en degrés (sauf mention explicite en radians). Les coordonnées suivent l'axe XY horizontal et Z l'altitude.
 
-### 14.1 TrajectoryCalculator — API principale et helpers
+### 10.1 TrajectoryCalculator — API principale et helpers
 
 #### calculate_trajectory(aircraft, cylinders=None)
 - But: Calcul standard d’une trajectoire jusqu’au FAF avec alignement progressif sur l’axe de piste, gestion d’altitude et évitement d’obstacles.
@@ -352,7 +388,7 @@ Cette section documente chaque fonction avec: objectif, entrées/sorties, logiqu
 - But: Balayage de toute la trajectoire pour identifier les cylindres touchés et l’index du premier point en collision.
 - Sorties: `(has_collision: bool, colliding_indices: list[int], first_idx: int)`
 
-### 14.2 Aircraft — types et dynamique simple
+### 10.2 Aircraft — types et dynamique simple
 
 #### AircraftType.SPECIFICATIONS
 - Contenu: paramètres par type (« light », « commercial », « cargo »): pentes max, vitesses typiques, limites de vitesse, inclinaison max.
@@ -373,7 +409,7 @@ Cette section documente chaque fonction avec: objectif, entrées/sorties, logiqu
 - Formule: $R = \dfrac{V^2}{g\tan(\phi)}$ avec V en m/s, g=9.81, φ = angle d'inclinaison max; résultat converti en km.
 - Usage: dimensionnement des virages réalistes et spirales.
 
-### 14.3 Environment — positions de référence
+### 10.3 Environment — positions de référence
 
 #### Environment.__init__(size_x=50, size_y=50, size_z=5)
 - But: Définir l’espace, la position de l’aéroport (au sol, coin 90%) et un FAF à ~5 km en amont sur une direction SW, altitude 0.5 km. Angle d’approche final nominal = 3°.
