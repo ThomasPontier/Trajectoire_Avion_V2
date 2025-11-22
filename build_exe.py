@@ -158,6 +158,9 @@ def build_executable():
         '--hidden-import=PIL._tkinter_finder',
         '--collect-all=matplotlib',
         '--collect-all=numpy',
+        '--exclude-module=PySide6',
+        '--exclude-module=PySide2',
+        '--exclude-module=PyQt5',
         '--optimize=2',
         '--noupx',
     ] + icon_option + ['main.py']
