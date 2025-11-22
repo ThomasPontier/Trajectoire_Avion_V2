@@ -10,7 +10,7 @@
         },
         "faf": {
             "x": 20.0,
-            "y": 26.0,
+            "y": 30.0,
             "z": 1.0
         }
     },
@@ -37,16 +37,16 @@
     "aircraft": {
         "type": "light",
         "position": {
-            "x": 130.0,
-            "y": 180.0,
-            "z": 4.0
+            "x": 155.0,
+            "y": 160.0,
+            "z": 3.0
         },
         "speed": 180.0,
-        "heading": 180.0,
+        "heading": 90.0,
         "max_climb_slope": 15.0,
         "max_descent_slope": -10.0
     },
     "simulation": {
-        "num_trajectories": 4
+        "num_trajectories": 20
     }
 }

@@ -1,13 +1,4 @@
-"""
-Simulateur de Trajectoire d'Avion - Version 1.1
-Projet P21 - ESTACA 4ème année
 
-Ce programme permet de calculer et visualiser la trajectoire optimale
-d'un avion pour atteindre le point FAF (Final Approach Fix) d'un aéroport.
-
-Version 1.1 : Ajout de la contrainte de pente maximale selon le type d'avion.
-L'avion vole en palier et entame sa descente le plus tard possible.
-"""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -1293,18 +1284,10 @@ class FlightSimulatorGUI:
         
         # Si une trajectoire existe
         if self.trajectory is not None:
-            print(f"\n🎨 AFFICHAGE DE LA TRAJECTOIRE")
-            print(f"   Nombre de points: {len(self.trajectory)}")
-            print(f"   Forme: {self.trajectory.shape}")
-            print(f"   Paramètres disponibles: {list(self.trajectory_params.keys()) if self.trajectory_params else 'Aucun'}")
-            
             # Vérifier si c'est une nouvelle trajectoire avec virages et segment initial
             if self.trajectory_params and 'turn_radius' in self.trajectory_params:
-                print(f"   📍 Type: Trajectoire avec VIRAGE (rayon {self.trajectory_params['turn_radius']:.3f} km)")
-                
                 # Vérifier s'il y a un segment initial (vol dans le cap initial)
                 if 'initial_segment_end_index' in self.trajectory_params:
-                    print(f"   📍 Trajectoire en 2 phases: Vol initial → Virage jusqu'au FAF")
                     initial_end_idx = self.trajectory_params['initial_segment_end_index']
                     turn_end_idx = self.trajectory_params['turn_segment_end_index']
                     turn_start = self.trajectory_params.get('turn_start_point', None)
@@ -1323,7 +1306,6 @@ class FlightSimulatorGUI:
                             self.ax_3d.scatter([turn_start[0]], [turn_start[1]], [self.trajectory[initial_end_idx-1, 2]], 
                                               c='purple', marker='*', s=200, label='Début virage', zorder=5, 
                                               edgecolors='darkviolet', linewidths=1.5)
-                            print(f"   ✓ Point début virage marqué: ({turn_start[0]:.1f}, {turn_start[1]:.1f})")
                     
                     # Phase 2: Virage progressif jusqu'au FAF avec alignement sur piste
                     # Diviser le virage en deux parties : virage + alignement
@@ -1339,22 +1321,16 @@ class FlightSimulatorGUI:
                                        'magenta', linewidth=2.5, label='Virage progressif', alpha=0.9)
                         
                         # 40% du virage en vert (alignement final)
-                        print(f"   🟢 Dessin ALIGNEMENT PISTE: {turn_end_idx - split_idx} points en VERT")
                         self.ax_3d.plot(self.trajectory[split_idx:turn_end_idx, 0], 
                                        self.trajectory[split_idx:turn_end_idx, 1], 
                                        self.trajectory[split_idx:turn_end_idx, 2], 
                                        'limegreen', linewidth=2.5, label='Alignement piste→FAF', alpha=0.9)
-                    
-                    # Le virage se termine au FAF - trajectoire complète
-                    print(f"   ✅ Trajectoire complète: l'avion arrive au FAF aligné avec la piste")
-                    
+                
                 else:
-                    # Ancienne version sans segment initial (ne devrait plus arriver)
-                    print(f"   ⚠️ Version ancienne de trajectoire détectée")
+                    pass  # Ancienne version sans segment initial (ne devrait plus arriver)
             
             # Nouvelle trajectoire avec alignement progressif sur l'axe piste
             if self.trajectory_params and 'runway_alignment' in self.trajectory_params:
-                print(f"   📍 Type: Trajectoire avec ALIGNEMENT PROGRESSIF sur axe piste")
                 initial_end = self.trajectory_params.get('initial_segment_end', 0)
                 turn_end = self.trajectory_params.get('turn_segment_end', initial_end)
                 intercept = self.trajectory_params.get('intercept_point', None)
@@ -1370,7 +1346,6 @@ class FlightSimulatorGUI:
                 # Phase 2: Virage progressif (magenta/violet)
                 if turn_end > initial_end:
                     n_turn = turn_end - initial_end
-                    print(f"   🟣 Dessin VIRAGE PROGRESSIF: {n_turn} points en MAGENTA")
                     self.ax_3d.plot(self.trajectory[initial_end:turn_end, 0], 
                                    self.trajectory[initial_end:turn_end, 1], 
                                    self.trajectory[initial_end:turn_end, 2], 
@@ -1381,7 +1356,6 @@ class FlightSimulatorGUI:
                         self.ax_3d.scatter([intercept[0]], [intercept[1]], [self.trajectory[turn_end-1, 2]], 
                                           c='purple', marker='D', s=150, label='Aligné avec piste', zorder=5, 
                                           edgecolors='darkviolet', linewidths=1.5)
-                        print(f"   ✓ Point alignement marqué: ({intercept[0]:.1f}, {intercept[1]:.1f})")
                 
                 # Phase 3: Sur l'axe piste vers FAF (vert/orange selon altitude)
                 if turn_end < len(self.trajectory):
@@ -1398,7 +1372,6 @@ class FlightSimulatorGUI:
                         # Approche en palier
                         if descent_start > turn_end:
                             n_level = descent_start - turn_end
-                            print(f"   🟢 Dessin APPROCHE SUR PISTE: {n_level} points en VERT")
                             self.ax_3d.plot(self.trajectory[turn_end:descent_start, 0], 
                                            self.trajectory[turn_end:descent_start, 1], 
                                            self.trajectory[turn_end:descent_start, 2], 
@@ -1407,7 +1380,6 @@ class FlightSimulatorGUI:
                         # Descente
                         if descent_start < len(self.trajectory):
                             n_descent = len(self.trajectory) - descent_start
-                            print(f"   🟠 Dessin DESCENTE: {n_descent} points en ORANGE")
                             self.ax_3d.plot(self.trajectory[descent_start:, 0], 
                                            self.trajectory[descent_start:, 1], 
                                            self.trajectory[descent_start:, 2], 
@@ -1415,7 +1387,6 @@ class FlightSimulatorGUI:
                     else:
                         # Tout sur l'axe
                         n_runway = len(self.trajectory) - turn_end
-                        print(f"   🟢 Dessin SUR PISTE: {n_runway} points en VERT")
                         self.ax_3d.plot(self.trajectory[turn_end:, 0], 
                                        self.trajectory[turn_end:, 1], 
                                        self.trajectory[turn_end:, 2], 
@@ -1458,23 +1429,16 @@ class FlightSimulatorGUI:
                                    'orangered', linewidth=2.5, label='Descente', alpha=0.9)
             else:
                 # Trajectoire simple (lissée)
-                print(f"   🟢 Dessin TRAJECTOIRE SIMPLE: {len(self.trajectory)} points en VERT")
                 self.ax_3d.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
                                self.trajectory[:, 2], 'g-', linewidth=2.5, label='Trajectoire', alpha=0.9)
-            
-            print(f"✅ TRAJECTOIRE AFFICHÉE AVEC SUCCÈS\n")
         
         # Afficher les trajectoires multiples s'il y en a
         if hasattr(self, 'multiple_trajectories') and self.multiple_trajectories:
-            print(f"\n🌈 AFFICHAGE DE {len(self.multiple_trajectories)} TRAJECTOIRES MULTIPLES")
-            
             # Couleurs distinctes pour les trajectoires multiples
             colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
             
             for i, trajectory in enumerate(self.multiple_trajectories):
                 color = colors[i % len(colors)]  # Recycler les couleurs si plus de 10
-                
-                print(f"   🎨 Trajectoire {i+1}: {len(trajectory)} points en {color}")
                 
                 # Dessiner la trajectoire complète avec une couleur unique
                 self.ax_3d.plot(trajectory[:, 0], trajectory[:, 1], trajectory[:, 2], 
@@ -1508,14 +1472,10 @@ class FlightSimulatorGUI:
                 # Ajouter le numéro de tentative comme texte près du point
                 self.ax_3d.text(pos[0], pos[1], pos[2] + 0.2, f'#{attempt_num}', 
                                fontsize=8, color='red', weight='bold')
-            
-            print(f"✅ {len(self.failed_trajectory_positions)} POSITIONS ÉCHOUÉES AFFICHÉES\n")
         
         # Afficher les trajectoires des tentatives de recalcul s'il y en a (et si l'option est activée)
         if (hasattr(self, 'retry_trajectories') and self.retry_trajectories and 
             hasattr(self, 'show_retry_trajectories_var') and self.show_retry_trajectories_var.get()):
-            print(f"\n🔄 AFFICHAGE DE {len(self.retry_trajectories)} TRAJECTOIRES DE RECALCUL")
-            
             # Couleurs pour les tentatives de recalcul (tons orangés et rouges)
             retry_colors = ['orange', 'darkorange', 'orangered', 'red', 'darkred']
             
@@ -2164,35 +2124,21 @@ class FlightSimulatorGUI:
             # Calculer la trajectoire selon l'option choisie
             calculator = TrajectoryCalculator(self.environment)
             
-            # Vérifier s'il y a des obstacles
-            if len(self.cylinders) > 0:
-                print(f"\n🚧 Détection de {len(self.cylinders)} obstacle(s) - activation évitement")
-            
             # Trajectoire avec virages réalistes (comportement par défaut)
-            print("\n🔧 Calcul: Trajectoire avec VIRAGES RÉALISTES...")
             self.trajectory, self.trajectory_params = calculator.calculate_trajectory_with_turn(
                 self.aircraft, self.cylinders
             )
-            
-            print(f"\n📦 Trajectoire calculée: {len(self.trajectory)} points stockés dans self.trajectory")
-            print(f"📦 Paramètres stockés: {list(self.trajectory_params.keys())}")
             
             # Récupérer les trajectoires des tentatives de recalcul s'il y en a eu
             if hasattr(calculator, 'retry_trajectories') and calculator.retry_trajectories:
                 self.retry_trajectories = calculator.retry_trajectories.copy()
                 self.retry_trajectories_info = calculator.retry_trajectories_info.copy()
-                print(f"\n🔄 {len(self.retry_trajectories)} tentatives de recalcul capturées pour visualisation")
-                for i, info in enumerate(self.retry_trajectories_info):
-                    status = "✅VALIDE" if not info['has_collision'] else "❌COLLISION"
-                    print(f"   • Tentative {info['attempt_number']}: {info['num_points']} pts, "
-                          f"marge {info['safety_factor']:.1f}km - {status}")
             else:
                 # S'assurer que les listes sont vides si pas de recalcul
                 self.retry_trajectories = []
                 self.retry_trajectories_info = []
             
             # Mettre à jour les visualisations
-            print(f"\n🎨 Appel de _draw_environment() pour afficher la trajectoire...")
             self._draw_environment()
             self._draw_parameters(self.trajectory_params['time'], 
                                 self.trajectory_params['altitude'], 
@@ -2524,8 +2470,6 @@ class FlightSimulatorGUI:
 
 def main():
     """Point d'entrée principal"""
-    # Sous Windows, définir l'AppUserModelID AVANT de créer la fenêtre
-    # pour s'assurer que la barre des tâches affiche la bonne icône et le bon groupement
     import sys
     if sys.platform == 'win32':
         try:

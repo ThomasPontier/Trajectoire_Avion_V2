@@ -1,4 +1,4 @@
-# Logique de Détermination de la Trajectoire
+﻿# Logique de Détermination de la Trajectoire
 
 Ce document résume visuellement et schématiquement la logique utilisée pour calculer la trajectoire optimale vers le point FAF (Final Approach Fix) en respectant les contraintes de pente, d'alignement sur l'axe piste et d'évitement d'obstacles cylindriques.
 
@@ -37,20 +37,49 @@ Sorties principales:
                  │ TrajectoryCalculator │
                  └─────────┬───────────┘
                            │
-        ┌──────────────────┼─────────────────────────────────────────────┐
-        │                  │                                             │
-        ▼                  ▼                                             ▼
-  calculate_trajectory  calculate_trajectory_with_turn   calculate_trajectory_with_automatic_turns
-        │                  │                                             │
-        ▼                  ▼                                             ▼
-  _build_trajectory...  (arc de virage tangent +       (si pente directe trop forte,
-        │               approche + descente)            tours en spirale puis trajectoire normale)
-        ▼
-  Trajectoire finale + paramètres
+                           ▼
+          calculate_trajectory_with_turn (MODE PAR DÉFAUT)
+                           │
+                           ▼
+        (arc de virage tangent + approche + descente)
+                           │
+              ┌────────────┴─────────────┐
+              │                          │
+              ▼                          ▼
+    Interception tangente         Fallback si impossible:
+         réussie                   calculate_trajectory
+              │                    (virage simplifié vers FAF)
+              │                          │
+              └──────────┬───────────────┘
+                         ▼
+              Trajectoire finale + paramètres
 ```
 
 ---
-## 3. Logique détaillée du mode principal (`calculate_trajectory`)
+## 3. Logique détaillée du mode principal (`calculate_trajectory_with_turn`)
+
+**MODE PAR DÉFAUT (100% des cas) :**
+
+Le système utilise **toujours** le mode "virages réalistes" qui calcule une trajectoire avec arc tangent à l'axe d'approche :
+
+1. Calcule le rayon de virage minimal selon la vitesse et l'inclinaison max de l'avion
+2. Détermine l'axe piste: vecteur (FAF → Aéroport) = direction de l'approche
+3. Calcule le point d'interception tangent entre le cercle de virage et l'axe d'approche via `_calculate_tangent_intercept`
+4. Si l'interception tangente est **possible** :
+   - Génère l'arc de virage (`_create_arc_trajectory`)
+   - Approche finale rectiligne avec descente + décélération (`_calculate_approach_with_descent_and_speed`)
+   - Calcul des paramètres avec profil de vitesse variable (`_calculate_parameters_with_speed_profile`)
+5. Si l'interception tangente est **impossible** (géométrie défavorable, avion trop éloigné de l'axe) :
+   - **Fallback automatique** sur `calculate_trajectory` (voir section 3bis)
+   - Ce mode simplifié construit une trajectoire avec virage progressif (Bézier) vers le FAF
+
+**Important :** Il n'y a plus de choix utilisateur entre modes. Le système sélectionne automatiquement la meilleure approche selon la géométrie.
+
+---
+## 3bis. Logique du mode fallback (`calculate_trajectory`)
+
+Ce mode est utilisé **uniquement en fallback** lorsque l'interception tangente est impossible :
+
 1. Récupère positions: départ avion, FAF, aéroport
 2. Calcule l'axe piste: vecteur (FAF → Aéroport) = direction de l'approche
 3. Calcule angle entre cap actuel et axe piste
@@ -66,33 +95,24 @@ Sorties principales:
 7. Calcul des paramètres finaux via `_calculate_parameters`
 
 ---
-## 4. Logique du mode virages réalistes (`calculate_trajectory_with_turn`)
+## 4. Mode virages réalistes (MODE PAR DÉFAUT - 100% des cas)
+
 Objectif: Produire un arc de virage tangent à l'axe d'approche avant la descente.
 
 Étapes:
 - Calcule rayon de virage minimal (`Aircraft.calculate_min_turn_radius`)
 - Géométrie tangentielle (`_calculate_tangent_intercept`) pour trouver point d'interception + centre de virage
-- Génère l'arc (`_create_arc_trajectory`)
-- Approche finale rectiligne avec descente + décélération (`_calculate_approach_with_descent_and_speed`)
-- Paramètres avec profil de vitesse variable (`_calculate_parameters_with_speed_profile`)
-- Si impossible (discriminant négatif / distance), fallback sur `calculate_trajectory`
+- Si **possible** :
+  - Génère l'arc (`_create_arc_trajectory`)
+  - Approche finale rectiligne avec descente + décélération (`_calculate_approach_with_descent_and_speed`)
+  - Paramètres avec profil de vitesse variable (`_calculate_parameters_with_speed_profile`)
+- Si **impossible** (discriminant négatif / distance) :
+  - Fallback automatique sur `calculate_trajectory` (virage simplifié Bézier)
+
+**Note :** Ce mode est toujours activé. Il n'y a plus de choix utilisateur.
 
 ---
-## 5. Mode automatique avec tours de réduction d'altitude (`calculate_trajectory_with_automatic_turns`)
-Utilisé si la pente nécessaire pour rejoindre directement le FAF dépasse la pente max.
-
-Processus:
-1. Vérification faisabilité pente (`_check_slope_feasibility`)
-2. Si excès d'altitude:
-   - Calcul nombre de tours nécessaires (`_calculate_altitude_reduction_turns`)
-   - Choix centre spirale sûr (`_find_safe_spiral_center`, `_evaluate_spiral_center_safety`, fallback `_find_alternative_spiral_center` / `_emergency_spiral_positioning`)
-   - Génération spirale (entrée, stable, sortie) `_generate_spiral_trajectory` (+ lissage `_smooth_transition`, `_smooth_trajectory`)
-3. Création d'un nouvel avion virtuel à la fin de la spirale
-4. Calcul trajectoire classique vers FAF (`calculate_trajectory`)
-5. Fusion des segments + paramètres combinés
-
----
-## 6. Gestion altitude (concept transversal)
+## 5. Gestion altitude (concept transversal)
 Phases typiques quand descente nécessaire:
 ```
 [ PALIER ] ----> [ TRANSITION DOUCE ] ----> [ DESCENTE LINÉAIRE ] ----> [ LISSAGE FINAL FAF ]
@@ -128,32 +148,34 @@ Stratégie recalcul en cas d'échec:
 ---
 ## 8. Liste des fonctions et rôles (référence rapide)
 
-TrajectoryCalculator:
-- `calculate_trajectory(aircraft, cylinders)`: Trajectoire standard alignée sur l'axe piste
+### TrajectoryCalculator
+
+**Calcul de trajectoire principal :**
+- `calculate_trajectory(aircraft, cylinders)`: Trajectoire standard alignée sur l'axe piste (mode fallback)
+- `calculate_trajectory_with_turn(...)`: Mode virage tangent réaliste (arc + approche) **[MODE PAR DÉFAUT]**
+
+**Construction de trajectoire :**
 - `_calculate_runway_intercept_point(...)`: Point d'interception sur axe avant FAF
 - `_build_trajectory_with_runway_alignment(...)`: Construction multi-phases + évitement + gestion altitude
 - `_calculate_simple_trajectory(...)`: Ligne droite dense (cas trivial)
 - `_vertical_trajectory(...)`: Descente verticale (déjà au-dessus du FAF)
 - `_calculate_trajectory_with_slope_constraint(...)`: Variante palier → transition → descente
 - `_calculate_trajectory_along_runway(...)`: Ligne sur axe piste avec descente lissée
-- `_calculate_parameters(...)`: Profil de vol (temps, pente, cap, taux de virage)
-- `_calculate_parameters_with_speed_profile(...)`: Idem mais vitesse variable
-- `calculate_trajectory_with_turn(...)`: Mode virage tangent réaliste (arc + approche)
+
+**Calculs géométriques :**
 - `_calculate_tangent_intercept(...)`: Géométrie tangente cercle/axe approche
 - `_create_arc_trajectory(...)`: Génération arc de virage
 - `_calculate_approach_with_descent_and_speed(...)`: Approche finale avec descente + décélération
-- `calculate_trajectory_with_automatic_turns(...)`: Tours automatiques si pente trop forte
-- `_check_slope_feasibility(...)`: Analyse pente directe vs pente maximale
-- `_calculate_altitude_reduction_turns(...)`: Spirale pour perdre altitude
-- `_find_safe_spiral_center(...)`, `_evaluate_spiral_center_safety(...)`: Choix centre optimal
-- `_find_alternative_spiral_center(...)`, `_emergency_spiral_positioning(...)`: Fallbacks robustes
-- `_generate_spiral_trajectory(...)`: Spirale multi-phases ultra-lissée
-- `_smooth_transition(t)`, `_smooth_trajectory(traj)`: Fonctions de lissage
-- `_adjust_turn_radius_for_obstacles(...)`: Ajuste rayon virage si obstacles proches
-- `_verify_spiral_clearance(...)`: Vérifie absence collision spirale
-- `_calculate_avoidance_waypoints(...)`, `_calculate_avoidance_waypoints_with_margin(...)`: Waypoints contournement
-- `_check_collision_with_cylinder(...)`, `_check_trajectory_collision(...)`: Détection collisions
-- `_calculate_avoidance_point(...)`: Génère waypoint latéral ponctuel
+
+**Évitement d'obstacles :**
+- `_calculate_avoidance_waypoints(...)`: Waypoints contournement (marge standard)
+- `_calculate_avoidance_waypoints_with_margin(...)`: Waypoints contournement (marge personnalisée)
+- `_check_collision_with_cylinder(...)`: Test collision point/cylindre
+- `_check_trajectory_collision(...)`: Validation collision trajectoire complète
+
+**Paramètres de vol :**
+- `_calculate_parameters(...)`: Profil de vol (temps, pente, cap, taux de virage)
+- `_calculate_parameters_with_speed_profile(...)`: Idem mais vitesse variable
 
 Aircraft:
 - `calculate_min_turn_radius(speed=None)`: Rayon minimal selon vitesse et inclinaison max
@@ -168,20 +190,28 @@ Environment:
         Début
           │
           ▼
-   Pente directe faisable ? -- Non --> Tours automatiques (_calculate_altitude_reduction_turns)
-          │                               │
-         Oui                              ▼
-          │                        Spirale générée
-          ▼                               │
-  Mode sélectionné ?                      └─> Trajectoire standard depuis fin spirale
-    ├─ Virages réalistes ? --> Tangente possible ? -- Non --> Trajectoire standard
-    │                               │
-    │                              Oui
-    │                               ▼
-    │                      Arc + Approche + Descente
-    │
-    └─ Standard --> Vol initial + Virage Bézier + Alignement FAF
-
+   calculate_trajectory_with_turn (MODE PAR DÉFAUT)
+          │
+          ▼
+   Calcul rayon de virage minimal
+   + Géométrie tangente (arc/axe)
+          │
+    ┌─────┴─────┐
+    │           │
+   Oui         Non
+    │           │
+    ▼           ▼
+ Tangence    Fallback:
+ possible   calculate_trajectory
+    │        (virage Bézier)
+    │           │
+    ▼           │
+ Arc + Approche │
+ + Descente     │
+    │           │
+    └─────┬─────┘
+          │
+          ▼
   (Dans tous les modes: gestion altitude + évitement obstacles + validation collision)
           │
           ▼
@@ -200,15 +230,22 @@ Environment:
 
 ---
 ## 11. Pistes d'amélioration possibles
+- Ajout de tests unitaires sur fonctions de géométrie et évitement
+- Export des trajectoires (GeoJSON / KML pour Google Earth / CSV)
 - Ajout d'un modèle de consommation carburant
+- Mode de comparaison de trajectoires (overlay multiple scenarios)
+- Génération automatique de rapports PDF avec statistiques
 - Intégration du vent (vecteur vitesse sol vs air)
-- Optimisation multi-objectifs (distance vs confort vs sécurité)
-- Export des trajectoires (GeoJSON / CSV)
-- Tests unitaires sur fonctions de géométrie et évitement
+- Optimisation multi-objectifs (distance vs confort vs sécurité vs carburant)
+- Contraintes temporelles (fenêtres d'atterrissage)
+- Support de waypoints intermédiaires obligatoires
 
 ---
 ## 12. Résumé éclair (TL;DR)
-La trajectoire est construite en combinant: orientation vers l'axe piste, gestion altitude (palier → transition ultra-douce → descente à pente max), évitement obstacles via waypoints tangents, et éventuellement virage tangent ou spirales de perte d'altitude si la pente dépasse les limites. Chaque segment est densément échantillonné et lissé pour une représentation fluide.
+
+Le système utilise **toujours le mode "virages réalistes"** qui calcule une trajectoire avec arc tangent à l'axe d'approche, suivi d'une descente progressive. Si la géométrie ne permet pas de construire cet arc tangent (avion trop éloigné de l'axe), le système bascule automatiquement sur un mode simplifié avec virage progressif (Bézier) vers le FAF. 
+
+Dans tous les cas, la trajectoire gère : orientation vers l'axe piste, altitude (palier → transition ultra-douce → descente à pente max), et évitement d'obstacles via waypoints tangents. Chaque segment est densément échantillonné et lissé pour une représentation fluide.
 
 ---
 *Document généré automatiquement.*
@@ -233,71 +270,48 @@ flowchart TD
    A --> B
    A --> C
 
-   %% Option tours automatiques si pente trop forte
-   subgraph Precheck["Pré-analyse pente optionnel"]
-      P0{"Pente directe faisable ?"}
-      P1["check_slope_feasibility"]
-   end
-   B --> P1
-   C --> P1
-   P1 --> P0
+   %% Appel direct du mode par défaut
+   B --> R0
+   C --> R0
 
-   %% Branche tours automatiques
-   P0 --"Non"--> TURNS["calculate_trajectory_with_automatic_turns"]
-   subgraph Turns["Tours automatiques"]
-      T1["calculate_altitude_reduction_turns"]
-      T2["find_safe_spiral_center"]
-      T3["generate_spiral_trajectory"]
-      T4["Création nouvel Aircraft à fin de spirale"]
-      T5["calculate_trajectory standard"]
-   end
-   TURNS --> T1 --> T2 --> T3 --> T4 --> T5 --> OUT1
-
-   %% Choix de mode (UI)
-   M1{"Virages réalistes activés ?"}
-   P0 --"Oui"--> M1
-
-   %% Branche virages réalistes
-   M1 --"Oui"--> R0["calculate_trajectory_with_turn"]
+   %% Mode virages réalistes (PAR DÉFAUT - toujours activé)
+   R0["calculate_trajectory_with_turn<br/>(MODE PAR DÉFAUT)"]
    subgraph Realistic["Virages réalistes"]
       R1["aircraft.calculate_min_turn_radius"]
-      R2["calculate_tangent_intercept"]
-      R3{"Interception tangente possible ?"}
-      R4["create_arc_trajectory"]
-      R5["calculate_approach_with_descent_and_speed"]
-      R6["calculate_parameters_with_speed_profile"]
+      R2["_calculate_tangent_intercept"]
+      R3{"Interception tangente<br/>possible ?"}
+      R4["_create_arc_trajectory"]
+      R5["_calculate_approach_with_descent_and_speed"]
+      R6["_calculate_parameters_with_speed_profile"]
    end
    R0 --> R1 --> R2 --> R3
    R3 --"Oui"--> R4 --> R5 --> R6 --> OUT2
-   R3 --"Non"--> S0["Fallback calculate_trajectory"]
+   R3 --"Non (Fallback)"--> S0["calculate_trajectory<br/>(virage simplifié Bézier)"]
 
-   %% Branche standard (alignement axe piste)
-   M1 --"Non"--> S0
-   subgraph Standard["Standard alignement axe piste"]
-      S1["calculate_runway_intercept_point"]
-      S2["build_trajectory_with_runway_alignment"]
+   %% Branche fallback (alignement axe piste)
+   subgraph Standard["Fallback: virage simplifié"]
+      S1["_calculate_runway_intercept_point"]
+      S2["_build_trajectory_with_runway_alignment"]
       S2a["Phase 1: segment initial rectiligne"]
-      S2b["calculate_avoidance_waypoints"]
+      S2b["_calculate_avoidance_waypoints"]
       S2c["Courbes de Bézier entre waypoints"]
-      S2d["Gestion altitude<br/>palier transition descente"]
-      S2e["check_trajectory_collision"]
+      S2d["Gestion altitude<br/>palier → transition → descente"]
+      S2e["_check_trajectory_collision"]
       S2f{"Collision ?"}
-      S2g["Recalcule avec marges<br/>calculate_avoidance_waypoints_with_margin"]
-      S3["calculate_parameters"]
+      S2g["Recalcule avec marges<br/>_calculate_avoidance_waypoints_with_margin"]
+      S3["_calculate_parameters"]
    end
    S0 --> S1 --> S2 --> S2a --> S2b --> S2c --> S2d --> S2e --> S2f
-   S2f --"Oui"--> S2g --> S2e
+   S2f --"Oui (max 5 tentatives)"--> S2g --> S2e
    S2f --"Non"--> S3 --> OUT3
 
    %% Sorties communes
    subgraph OUT["Sorties"]
-      OUT1["Trajectoire spirale + standard + params"]
-      OUT2["Trajectoire arc + approche + params"]
-      OUT3["Trajectoire standard + params"]
+      OUT2["Trajectoire arc + approche<br/>+ paramètres avec profil vitesse"]
+      OUT3["Trajectoire virage simplifié<br/>+ paramètres vitesse constante"]
    end
 
-   OUT1 --> VIZ["Plots 3D/2D & Graphiques Matplotlib/Tk"]
-   OUT2 --> VIZ
+   OUT2 --> VIZ["Visualisation 3D/2D<br/>Matplotlib + Tkinter"]
    OUT3 --> VIZ
 ```
 
@@ -309,7 +323,15 @@ flowchart TD
    - Environment: airport_position[x,y,z], faf_position[x,y,z], sizeX/Y/Z
    - Obstacles: list[{x, y, radius, height}]
 
-[Trajectoire Standard]
+[Mode Principal : Virages Réalistes - PAR DÉFAUT]
+   1) aircraft.calculate_min_turn_radius(speed)
+   2) _calculate_tangent_intercept(start_2D, current_dir, approach_dir, airport_2D, faf_2D, radius)
+       - si échec → fallback mode simplifié
+   3) _create_arc_trajectory(...)
+   4) _calculate_approach_with_descent_and_speed(...)
+   5) _calculate_parameters_with_speed_profile(...)
+
+[Mode Fallback : Virage Simplifié]
    1) _calculate_runway_intercept_point(start_2D, current_dir, airport_2D, faf_2D, runway_dir, angle)
        → intercept_2D
    2) _build_trajectory_with_runway_alignment(..., cylinders)
@@ -323,21 +345,6 @@ flowchart TD
    3) _calculate_parameters(trajectory, speed)
        → time[N], altitude[N], slope[N], heading[N], turn_rate[N], distance, flight_time
 
-[Virages Réalistes]
-   1) aircraft.calculate_min_turn_radius(speed)
-   2) _calculate_tangent_intercept(start_2D, current_dir, approach_dir, airport_2D, faf_2D, radius)
-       - si échec → fallback standard
-   3) _create_arc_trajectory(...)
-   4) _calculate_approach_with_descent_and_speed(...)
-   5) _calculate_parameters_with_speed_profile(...)
-
-[Tours Automatiques]
-   1) _check_slope_feasibility(start, faf) → feasible?, required_slope, excess_altitude
-   2) _calculate_altitude_reduction_turns(..., excess_altitude, cylinders)
-       → _find_safe_spiral_center/_evaluate_spiral_center_safety
-       → _generate_spiral_trajectory (entrée/stable/sortie + lissages)
-   3) calculate_trajectory depuis fin spirale
-
 [Outputs]
    - Trajectory: array float64 (N x 3)
    - Parameters: dict{time[N], altitude[N], slope[N], heading[N], turn_rate[N], distance, flight_time}
@@ -345,16 +352,16 @@ flowchart TD
 ```
 
 ### 13.3 Points de contrôle et échecs gérés
-- Collisions obstacles: rejet + tentatives avec marges croissantes; si 5 échecs → échec explicite et recommandations
-- Pente trop forte: déclenchement tours automatiques (spirale) avec recherche de centre sûr
-- Interception tangente impossible: fallback immédiat sur trajectoire standard
-- Lissages systématiques: transitions d’altitude (quintic/7e) + moyenne mobile
+- **Collisions obstacles**: rejet + tentatives avec marges croissantes; si 5 échecs → échec explicite et recommandations
+- **Interception tangente impossible**: fallback immédiat sur trajectoire standard avec virage Bézier
+- **Lissages systématiques**: transitions d'altitude (quintic/super-smoothstep 7ème degré) pour continuité
+- **Validation à chaque étape**: vérification géométrique avant génération de chaque segment
 
 ---
 
 ## 14. Référence détaillée par fonction (API + algorithmes)
 
-Cette section documente chaque fonction avec: objectif, entrées/sorties, logique, cas limites, et notes d’implémentation. Les distances sont en km, les vitesses en km/h, les angles en degrés (sauf mention explicite en radians). Les coordonnées suivent l’axe XY horizontal et Z l’altitude.
+Cette section documente chaque fonction avec: objectif, entrées/sorties, logique, cas limites, et notes d'implémentation. Les distances sont en km, les vitesses en km/h, les angles en degrés (sauf mention explicite en radians). Les coordonnées suivent l'axe XY horizontal et Z l'altitude.
 
 ### 14.1 TrajectoryCalculator — API principale et helpers
 
@@ -436,56 +443,6 @@ Cette section documente chaque fonction avec: objectif, entrées/sorties, logiqu
 - But: Approche rectiligne avec descente progressive (palier→transition cosinus→linéaire) et décélération de la vitesse initiale vers `target_speed`.
 - Détails: densité ≥500 points (~100 pts/km), décélération démarrant au dernier tiers de la distance, easing cosinus pour la vitesse et pour la transition d’altitude.
 
-#### _check_slope_feasibility(aircraft, start_pos, target_pos)
-- But: Vérifier si la pente directe vers le FAF respecte la pente max de descente de l’avion.
-- Sorties: `(is_feasible: bool, required_slope: deg, excess_altitude: km)` où `excess_altitude`>0 déclenche les tours automatiques.
-- Formule: pente requise $\alpha=\arctan(\Delta z / d_{xy})$; si $|\alpha|>$ pente max en descente, calcul de l’altitude excédentaire.
-
-#### calculate_trajectory_with_automatic_turns(aircraft, cylinders=None)
-- But: Si pente directe trop forte, génère une spirale de réduction puis enchaîne une trajectoire standard jusqu’au FAF.
-- Étapes: `_check_slope_feasibility` → `_calculate_altitude_reduction_turns` (spirale) → création d’un `Aircraft` virtuel à la sortie → `calculate_trajectory` → concaténation + paramètres combinés.
-
-#### _calculate_altitude_reduction_turns(aircraft, start_pos, target_pos, excess_altitude, cylinders=None)
-- But: Dimensionner et générer une spirale de réduction d’altitude sécurisée avec évitement d’obstacles.
-- Étapes:
-   - Rayon de base via `calculate_min_turn_radius`, puis `_adjust_turn_radius_for_obstacles` si proche d’obstacles.
-   - Choix d’un centre sûr via `_find_safe_spiral_center` (scoring multi-critères) et vérification `_verify_spiral_clearance`; fallback `_find_alternative_spiral_center` ou `_emergency_spiral_positioning` si nécessaire.
-   - Génération de la spirale `_generate_spiral_trajectory` (entrée/stable/sortie, haute densité, lissage); revalidation collisions et repositionnement d’urgence le cas échéant.
-- Sorties: `(spiral_trajectory, final_position)` où `final_position` = dernier point 3D de la spirale.
-
-#### _adjust_turn_radius_for_obstacles(base_radius, start_pos, cylinders)
-- But: Augmenter le rayon de virage si des obstacles proches imposent une plus grande marge latérale (limite +50%).
-
-#### _verify_spiral_clearance(center, radius, altitude, cylinders)
-- But: Vérifier qu’un cercle de rayon `radius` autour de `center` ne coupe aucun obstacle compte tenu d’une marge latérale et verticale.
-- Retour: bool.
-
-#### _find_safe_spiral_center(start_pos, target_pos, turn_radius, cylinders)
-- But: Recherche guidée (droite/gauche/arrière-droite/arrière-gauche × facteurs de distance) du centre de spirale maximisant un score de sécurité.
-- Critères: distance aux obstacles (rayon+rayon obstacle+marge), proximité raisonnable du départ, orientation globale par rapport au FAF.
-
-#### _evaluate_spiral_center_safety(center, turn_radius, cylinders, start_pos, target_pos, base_margin)
-- But: Calcul du score de sécurité [0–10+] utilisé par la recherche de centre; pénalités pour recouvrement, bonus pour sur-marge, pénalité si marge verticale faible.
-
-#### _find_alternative_spiral_center(start_pos, target_pos, turn_radius, cylinders)
-- But: Recherche par grille radiale (angles × distances) pour maximiser la distance minimale à tout obstacle.
-
-#### _emergency_spiral_positioning(start_pos, target_pos, turn_radius, cylinders)
-- But: Heuristique de secours testant 16 directions × 3 distances pour s’éloigner au maximum des obstacles lorsque tout échoue.
-
-#### _generate_spiral_trajectory(start_pos, spiral_center, turn_radius, num_turns, total_descent, descent_rate)
-- But: Générer une spirale en trois phases (15/70/15%) avec transitions ultra-douces et limite de variation d’altitude par point pour éviter les à-coups.
-- Détails:
-   - Densité très élevée: 720 pts/tour; angle total = `num_turns` × 2π.
-   - Easing: `_smooth_transition` (quintic) pour entrée/sortie; limitation de dZ/point (~10 m) pour la stabilité visuelle.
-   - Lissage final de l’altitude par `_smooth_trajectory` (moyenne mobile pondérée 25–50–25).
-
-#### _smooth_transition(t)
-- But: Smoothstep quintic $6t^5 - 15t^4 + 10t^3$ sur t∈[0,1]; dérivées nulles aux bornes.
-
-#### _smooth_trajectory(traj)
-- But: Lissage de l’altitude par moyenne mobile pondérée (25/50/25) pour supprimer de faibles discontinuités.
-
 #### _calculate_avoidance_waypoints(start_2d, end_2d, cylinders, altitude)
 - But: Détecter les cylindres intersectant le segment direct et générer des points d’entrée/sortie latéraux (côté choisi par produit vectoriel) pour longer le périmètre avec une petite marge.
 - Détails: projection du centre sur le segment, test de distance au segment < rayon+marge; points décalés perpendiculairement avec correction pour rester ≥ rayon+marge.
@@ -500,10 +457,6 @@ Cette section documente chaque fonction avec: objectif, entrées/sorties, logiqu
 #### _check_trajectory_collision(trajectory, cylinders)
 - But: Balayage de toute la trajectoire pour identifier les cylindres touchés et l’index du premier point en collision.
 - Sorties: `(has_collision: bool, colliding_indices: list[int], first_idx: int)`
-
-#### _calculate_avoidance_point(start_pos, target_pos, cylinder, safety_margin=0.5)
-- But: Calculer un waypoint latéral unique autour d’un cylindre (utilitaire ponctuel).
-- Détails: choisit une direction « outward » à partir du point le plus proche du segment; place le point à rayon+marge; altitude = max(moyenne start/target, hauteur cylindre+marge).
 
 ### 14.2 Aircraft — types et dynamique simple
 
