@@ -1,0 +1,256 @@
+<mxfile host="65bd71144e">
+    <diagram id="TrajectoryTypes" name="Types de Trajectoires">
+        <mxGraphModel dx="744" dy="389" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="TYPES DE TRAJECTOIRES - SIMULATEUR P21" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="300" y="20" width="560" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj1_title" value="1. TRAJECTOIRE DIRECTE (Ligne droite)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="80" width="500" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj1_start" value="Position initiale" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="70" y="130" width="80" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj1_faf" value="FAF&#xa;(Final Approach Fix)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="430" y="130" width="80" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj1_line" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="traj1_start" target="traj1_faf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj1_note" value="• Distance minimale&#xa;• Pas d&#39;obstacle&#xa;• Descente linéaire&#xa;• n_points = max(500, 100/km)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" parent="1" vertex="1">
+                    <mxGeometry x="220" y="190" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_title" value="2. TRAJECTOIRE AVEC ALIGNEMENT PISTE (Courbes de Bézier)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="280" width="500" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_start" value="Position initiale" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="70" y="330" width="80" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_initial" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="170" y="345" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_airport" value="Aéroport" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="470" y="465" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_runway" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;" parent="1" edge="1" source="traj2_faf">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="360" y="340" as="sourcePoint"/>
+                        <mxPoint x="490" y="490" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj2_runway_label" value="Axe piste" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#CC0000;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="390" y="390" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_line1" value="" style="endArrow=none;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="traj2_start" target="traj2_initial" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_bezier" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" parent="1" source="traj2_initial" target="traj2_faf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="190" y="355" as="sourcePoint"/>
+                        <mxPoint x="460" y="410" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="250" y="350"/>
+                            <mxPoint x="340" y="360"/>
+                            <mxPoint x="410" y="390"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj2_p1" value="P1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="240" y="340" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_p2" value="P2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="400" y="380" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj2_note" value="Phase 1: Vol rectiligne (20% distance)&#xa;Phase 2: Virage progressif Bézier cubique&#xa;• P0 = fin vol initial&#xa;• P1 = direction actuelle (35%)&#xa;• P2 = direction piste (35%)&#xa;• P3 = FAF&#xa;• Alignement final sur axe piste" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="60" y="410" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_title" value="3. TRAJECTOIRE AVEC ÉVITEMENT D&#39;OBSTACLES (Waypoints tangents)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="600" y="80" width="530" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_start" value="Position&#xa;initiale" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="630" y="130" width="70" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_obstacle" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=60" parent="1" vertex="1">
+                    <mxGeometry x="830" y="140" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_obstacle_label" value="Obstacle&#xa;cylindrique" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="840" y="165" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_faf" value="FAF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="145" width="70" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_direct" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="traj3_start" target="traj3_faf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_direct_label" value="Trajet direct&#xa;(collision)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#CC0000" parent="1" vertex="1">
+                    <mxGeometry x="820" y="115" width="70" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_wp1" value="WP1&#xa;entrée" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="770" y="100" width="40" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_wp2" value="WP2&#xa;sortie" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="940" y="100" width="40" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_avoid" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="traj3_start" target="traj3_faf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="740" y="140"/>
+                            <mxPoint x="790" y="117"/>
+                            <mxPoint x="870" y="95"/>
+                            <mxPoint x="960" y="117"/>
+                            <mxPoint x="1000" y="140"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj3_perp" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#9673a6;dashed=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="870" y="170" as="sourcePoint"/>
+                        <mxPoint x="870" y="95" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj3_perp_label" value="Décalage&#xa;perpendiculaire" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontColor=#9673a6" parent="1" vertex="1">
+                    <mxGeometry x="880" y="120" width="60" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_radius" value="" style="endArrow=none;html=1;strokeWidth=1;strokeColor=#b85450;dashed=1;startArrow=classic;startFill=1;endFill=0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="870" y="180" as="sourcePoint"/>
+                        <mxPoint x="830" y="180" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj3_radius_label" value="r + marge" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontColor=#b85450" parent="1" vertex="1">
+                    <mxGeometry x="835" y="185" width="50" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_note" value="ALGORITHME D&#39;ÉVITEMENT:&#xa;1. Détection collision sur trajet direct&#xa;2. Calcul vecteur perpendiculaire à trajectoire&#xa;3. Génération waypoints tangents:&#xa;   • WP entrée = projection - distance approche&#xa;   • WP sortie = projection + distance approche&#xa;   • Décalage latéral = r + marge sécurité&#xa;4. Courbes Bézier entre waypoints&#xa;5. Vérification clearance minimale" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="630" y="240" width="250" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj3_view" value="VUE DE DESSUS (Plan XY)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#666666" parent="1" vertex="1">
+                    <mxGeometry x="770" y="235" width="180" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_title" value="4. TRAJECTOIRE DESCENTE VERTICALE (Au-dessus du FAF)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="600" y="390" width="530" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_view" value="VUE EN COUPE (Plan XZ)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#666666" parent="1" vertex="1">
+                    <mxGeometry x="770" y="430" width="180" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_ground" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#666666;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="620" y="640" as="sourcePoint"/>
+                        <mxPoint x="1110" y="640" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj4_ground_label" value="Sol (z=0)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#666666" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="645" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_start" value="Position initiale&#xa;(x, y, z_haut)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="850" y="460" width="90" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_faf" value="FAF&#xa;(x, y, z_bas)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="850" y="590" width="90" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_traj" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="traj4_start" target="traj4_faf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="880" y="540"/>
+                            <mxPoint x="910" y="570"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj4_vertical" value="" style="endArrow=none;html=1;strokeWidth=1;strokeColor=#CC0000;dashed=1;dashPattern=8 8;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="895" y="510" as="sourcePoint"/>
+                        <mxPoint x="895" y="590" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj4_vertical_label" value="Axe vertical&#xa;(x,y constants)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=8;fontColor=#CC0000" parent="1" vertex="1">
+                    <mxGeometry x="810" y="535" width="70" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_alt_high" value="" style="endArrow=none;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;startArrow=none;startFill=0;endFill=0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="940" y="485" as="sourcePoint"/>
+                        <mxPoint x="1050" y="485" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj4_alt_high_label" value="z_start = 3.0 km" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="475" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_alt_low" value="" style="endArrow=none;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;startArrow=none;startFill=0;endFill=0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="940" y="615" as="sourcePoint"/>
+                        <mxPoint x="1050" y="615" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj4_alt_low_label" value="z_faf = 0.5 km" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="605" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_smooth" value="Fonction smooth (ease-in-out):&#xa;smooth_t = t² × (3 - 2t)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;align=left" parent="1" vertex="1">
+                    <mxGeometry x="950" y="540" width="150" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="traj4_note" value="CAS PARTICULIER:&#xa;• Distance horizontale ≈ 0&#xa;• Avion au-dessus du FAF&#xa;• Descente verticale progressive&#xa;• Vitesse réduite: 10 km/h&#xa;• n_points = max(300, Δz × 200)&#xa;• Transition douce sans secousse" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="630" y="480" width="190" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_title" value="LÉGENDE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="530" width="500" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_start" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="60" y="570" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_start_label" value="Position initiale avion" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="95" y="570" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_faf" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="60" y="595" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_faf_label" value="Final Approach Fix (cible)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="95" y="595" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_wp" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="60" y="620" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_wp_label" value="Waypoint intermédiaire / Point contrôle" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="95" y="620" width="190" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_obstacle" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;opacity=60" parent="1" vertex="1">
+                    <mxGeometry x="300" y="570" width="30" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_obstacle_label" value="Obstacle cylindrique" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="335" y="575" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_traj" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="300" y="612" as="sourcePoint"/>
+                        <mxPoint x="340" y="612" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend_traj_label" value="Trajectoire calculée" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="345" y="602" width="110" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_axis" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="300" y="640" as="sourcePoint"/>
+                        <mxPoint x="340" y="640" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend_axis_label" value="Axe de référence (piste/vertical)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9" parent="1" vertex="1">
+                    <mxGeometry x="345" y="630" width="170" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="tech_note" value="NOTES TECHNIQUES:&#xa;• Courbes de Bézier cubiques: P(t) = (1-t)³P₀ + 3(1-t)²t P₁ + 3(1-t)t²P₂ + t³P₃&#xa;• Super-smoothstep altitude: f(t) = -20t⁷ + 70t⁶ - 84t⁵ + 35t⁴ (dérivées 1 et 2 nulles)&#xa;• Respect pente maximale: max_descent_slope spécifique au type d&#39;avion&#xa;• Densité points: minimum 100 points/km pour trajectoire lisse" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8" parent="1" vertex="1">
+                    <mxGeometry x="40" y="670" width="500" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="formulas" value="FORMULES CLÉS:&#xa;Distance descente min: d_min = Δz / tan(|max_descent_slope|)&#xa;Rayon virage min: r_min = v² / (g × tan(max_bank_angle))&#xa;Temps vol: t = distance / vitesse" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="900" y="670" width="230" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;" edge="1" parent="1" target="traj2_faf">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="360" y="340" as="sourcePoint"/>
+                        <mxPoint x="490" y="490" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="traj2_faf" value="FAF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="430" y="420" width="60" height="40" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

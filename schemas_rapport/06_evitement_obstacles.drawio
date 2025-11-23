@@ -1,0 +1,192 @@
+<mxfile host="65bd71144e">
+    <diagram id="AvoidanceStrategy" name="Évitement Obstacles">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                
+                <!-- Titre principal -->
+                <mxCell id="2" value="STRATÉGIE D'ÉVITEMENT D'OBSTACLES PAR WAYPOINTS TANGENTS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="30" width="800" height="40" as="geometry"/>
+                </mxCell>
+                
+                <!-- Section 1 -->
+                <mxCell id="3" value="VUE GÉNÉRALE - Principe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="50" y="100" width="600" height="30" as="geometry"/>
+                </mxCell>
+                
+                <!-- Start position -->
+                <mxCell id="4" value="Start" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="100" y="200" width="70" height="50" as="geometry"/>
+                </mxCell>
+                
+                <!-- FAF position -->
+                <mxCell id="5" value="FAF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="550" y="200" width="70" height="50" as="geometry"/>
+                </mxCell>
+                
+                <!-- Obstacle cylindre -->
+                <mxCell id="6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=70;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="175" width="100" height="100" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="7" value="Obstacle" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="320" y="215" width="60" height="30" as="geometry"/>
+                </mxCell>
+                
+                <!-- Trajectoire directe (collision) -->
+                <mxCell id="8" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="4" target="5">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="9" value="Trajet direct (COLLISION)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#CC0000;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="300" y="145" width="140" height="20" as="geometry"/>
+                </mxCell>
+                
+                <!-- Waypoints -->
+                <mxCell id="10" value="WP1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="230" y="150" width="50" height="35" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="11" value="WP2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="420" y="150" width="50" height="35" as="geometry"/>
+                </mxCell>
+                
+                <!-- Trajectoire évitement -->
+                <mxCell id="12" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="4" target="5">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="200" y="210"/>
+                            <mxPoint x="255" y="167"/>
+                            <mxPoint x="350" y="140"/>
+                            <mxPoint x="445" y="167"/>
+                            <mxPoint x="500" y="210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                
+                <mxCell id="13" value="Trajectoire d'évitement" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#0066CC;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="320" y="110" width="130" height="20" as="geometry"/>
+                </mxCell>
+                
+                <!-- Section 2 - Calculs -->
+                <mxCell id="20" value="CALCULS GÉOMÉTRIQUES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="50" y="320" width="600" height="30" as="geometry"/>
+                </mxCell>
+                
+                <!-- Étape A -->
+                <mxCell id="21" value="ÉTAPE A: Projection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="70" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="22" value="• Projeter centre obstacle&#xa;  sur trajectoire directe&#xa;• Calculer distance&#xa;  perpendiculaire" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9" vertex="1" parent="1">
+                    <mxGeometry x="70" y="400" width="160" height="60" as="geometry"/>
+                </mxCell>
+                
+                <!-- Étape B -->
+                <mxCell id="23" value="ÉTAPE B: Vérification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="260" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="24" value="• SI distance &lt; rayon + marge&#xa;  → COLLISION détectée&#xa;• Calculer vecteur&#xa;  perpendiculaire" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9" vertex="1" parent="1">
+                    <mxGeometry x="260" y="400" width="160" height="60" as="geometry"/>
+                </mxCell>
+                
+                <!-- Étape C -->
+                <mxCell id="25" value="ÉTAPE C: Waypoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="450" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="26" value="• WP_entry = projection - dist&#xa;• WP_exit = projection + dist&#xa;• Décalage perpendiculaire&#xa;  = rayon + marge" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9" vertex="1" parent="1">
+                    <mxGeometry x="450" y="400" width="160" height="60" as="geometry"/>
+                </mxCell>
+                
+                <!-- Formules -->
+                <mxCell id="30" value="FORMULES CLÉS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="70" y="490" width="540" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="31" value="vec_to_cylinder = Centre - Start&#xa;proj_length = dot(vec_to_cylinder, traj_direction)&#xa;P_projection = Start + proj_length × traj_direction&#xa;distance_perpendiculaire = norm(Centre - P_projection)&#xa;&#xa;vecteur_perpendiculaire = [-traj_dir_y, traj_dir_x]&#xa;side = sign(cross_product)  // côté de contournement&#xa;&#xa;approach_distance = max(rayon × 0.8, 1.0)&#xa;offset_lateral = (rayon - distance) + marge_sécurité&#xa;&#xa;WP_entry = entry_base + side × perp × offset&#xa;WP_exit = exit_base + side × perp × offset" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8;fontFamily=Courier New;" vertex="1" parent="1">
+                    <mxGeometry x="70" y="520" width="540" height="120" as="geometry"/>
+                </mxCell>
+                
+                <!-- Légende -->
+                <mxCell id="40" value="LÉGENDE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="700" y="100" width="650" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="41" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="145" width="35" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="Position initiale avion" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="760" y="145" width="130" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="43" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="180" width="35" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="FAF (Final Approach Fix)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="760" y="180" width="150" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="45" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=70;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="215" width="35" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="46" value="Obstacle cylindrique" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="760" y="220" width="130" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="47" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="260" width="35" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="48" value="Waypoint évitement" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="760" y="260" width="130" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="49" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="720" y="307" as="sourcePoint"/>
+                        <mxPoint x="760" y="307" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="50" value="Trajectoire d'évitement" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="770" y="295" width="140" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="51" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="720" y="342" as="sourcePoint"/>
+                        <mxPoint x="760" y="342" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="52" value="Trajectoire directe (collision)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="770" y="330" width="160" height="25" as="geometry"/>
+                </mxCell>
+                
+                <!-- Paramètres -->
+                <mxCell id="60" value="PARAMÈTRES SYSTÈME" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#9c27b0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="700" y="380" width="300" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="61" value="• Marge sécurité: 0.5 km&#xa;• Approach distance: max(r × 0.8, 1.0)&#xa;• Points Bézier: 150 pts/km&#xa;• Validation clearance minimale" style="text;html=1;strokeColor=#9c27b0;fillColor=#e1bee7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="700" y="410" width="300" height="70" as="geometry"/>
+                </mxCell>
+                
+                <!-- Avantages -->
+                <mxCell id="62" value="AVANTAGES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="1030" y="380" width="320" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="63" value="✓ Minimise déviation trajectoire&#xa;✓ Garantit clearance sécurité&#xa;✓ Continuité C² avec courbes Bézier&#xa;✓ Adaptable à obstacles multiples&#xa;✓ Validation collision check finale" style="text;html=1;strokeColor=#4caf50;fillColor=#c8e6c9;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=10" vertex="1" parent="1">
+                    <mxGeometry x="1030" y="410" width="320" height="90" as="geometry"/>
+                </mxCell>
+                
+                <!-- Note technique -->
+                <mxCell id="70" value="NOTE: Les waypoints sont calculés pour longer tangentiellement le périmètre de l'obstacle,&#xa;minimisant ainsi la déviation de trajectoire tout en garantissant un niveau de sécurité optimal." style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2" vertex="1" parent="1">
+                    <mxGeometry x="700" y="520" width="650" height="40" as="geometry"/>
+                </mxCell>
+                
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
