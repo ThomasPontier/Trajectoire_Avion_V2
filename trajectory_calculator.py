@@ -388,7 +388,7 @@ class TrajectoryCalculator:
             heading_array[1:] = np.where(heading_array[1:] < 0, heading_array[1:] + 360, heading_array[1:])
             heading_array[0] = heading_array[1]
         
-        # Calculer le taux de virage - vectorisé
+        # Calculer le taux de virage - vectorisé avec lissage
         turn_rate_array = np.zeros(n_points)
         if n_points > 1:
             delta_time = np.diff(time_array)
@@ -398,6 +398,17 @@ class TrajectoryCalculator:
             delta_heading = np.where(delta_heading < -180, delta_heading + 360, delta_heading)
             turn_rate_array[1:] = np.where(delta_time > 0, delta_heading / delta_time, 0.0)
             turn_rate_array[0] = turn_rate_array[1]
+            
+            # Lissage du taux de virage avec une moyenne mobile pour éliminer les pics
+            # Utilisation d'une fenêtre adaptative selon le nombre de points
+            window_size = max(5, min(51, n_points // 20))  # Fenêtre entre 5 et 51 points (doit être impair)
+            if window_size % 2 == 0:
+                window_size += 1
+            
+            # Application d'un filtre moyenneur
+            if n_points > window_size:
+                from scipy.ndimage import uniform_filter1d
+                turn_rate_array = uniform_filter1d(turn_rate_array, size=window_size, mode='nearest')
         
         return {
             'time': time_array,

@@ -142,7 +142,7 @@ class FlightSimulatorGUI:
             if turn_end > initial_end:
                 split_idx = initial_end + int((turn_end - initial_end) * 0.6)
                 self._plot_trajectory_segment(ax, self.trajectory, initial_end, split_idx, 'magenta', 'Virage progressif')
-                self._plot_trajectory_segment(ax, self.trajectory, split_idx, turn_end, 'limegreen', 'Alignement piste→FAF')
+                self._plot_trajectory_segment(ax, self.trajectory, split_idx, turn_end, 'limegreen', 'Alignement piste->FAF')
         
         # Nouvelle trajectoire avec alignement progressif sur axe piste
         elif params and 'runway_alignment' in params:
@@ -275,9 +275,7 @@ class FlightSimulatorGUI:
                 pass
                 
         except Exception as e:
-            print(f"⚠️  Impossible de charger le logo: {e}")
-            import traceback
-            traceback.print_exc()
+            pass
     
     def _on_closing(self):
         """Gestionnaire de fermeture de la fenêtre"""
@@ -306,7 +304,7 @@ class FlightSimulatorGUI:
         """Crée l'onglet de configuration avec sous-onglets et vue 3D"""
         
         config_frame = ttk.Frame(self.main_notebook)
-        self.main_notebook.add(config_frame, text="⚙️ Configuration")
+        self.main_notebook.add(config_frame, text="Configuration")
         
         paned = ttk.PanedWindow(config_frame, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -318,15 +316,15 @@ class FlightSimulatorGUI:
         config_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         env_frame = ttk.Frame(config_notebook, padding="10")
-        config_notebook.add(env_frame, text="🌍 Environnement")
+        config_notebook.add(env_frame, text="Environnement")
         self._create_environment_config(env_frame)
         
         obstacles_frame = ttk.Frame(config_notebook, padding="10")
-        config_notebook.add(obstacles_frame, text="🚧 Obstacles")
+        config_notebook.add(obstacles_frame, text="Obstacles")
         self._create_obstacles_config(obstacles_frame)
         
         aircraft_main_frame = ttk.Frame(config_notebook)
-        config_notebook.add(aircraft_main_frame, text="✈️ Avion")
+        config_notebook.add(aircraft_main_frame, text="Avion")
         
         aircraft_canvas = tk.Canvas(aircraft_main_frame, highlightthickness=0)
         aircraft_scrollbar = ttk.Scrollbar(aircraft_main_frame, orient="vertical", command=aircraft_canvas.yview)
@@ -344,7 +342,7 @@ class FlightSimulatorGUI:
         right_frame = ttk.Frame(paned)
         paned.add(right_frame, weight=1)
         
-        preview_label = ttk.Label(right_frame, text="📦 Prévisualisation 3D", 
+        preview_label = ttk.Label(right_frame, text="Prévisualisation 3D", 
                                  font=('Arial', 12, 'bold'))
         preview_label.pack(pady=5)
         
@@ -363,7 +361,7 @@ class FlightSimulatorGUI:
         """Crée l'onglet avec la vue 3D"""
         
         view_3d_frame = ttk.Frame(self.main_notebook)
-        self.main_notebook.add(view_3d_frame, text="📦 Vue 3D")
+        self.main_notebook.add(view_3d_frame, text="Vue 3D")
         
         self.fig_3d = plt.Figure(figsize=(12, 8))
         self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
@@ -380,7 +378,7 @@ class FlightSimulatorGUI:
         """Crée l'onglet avec les 3 vues 2D orthogonales"""
         
         views_2d_frame = ttk.Frame(self.main_notebook)
-        self.main_notebook.add(views_2d_frame, text="📐 Vues 2D")
+        self.main_notebook.add(views_2d_frame, text="Vues 2D")
         
         self.fig_2d = plt.Figure(figsize=(14, 10))
         
@@ -420,7 +418,7 @@ class FlightSimulatorGUI:
         """Crée l'onglet avec les graphiques de paramètres"""
         
         params_frame = ttk.Frame(self.main_notebook)
-        self.main_notebook.add(params_frame, text="📊 Paramètres")
+        self.main_notebook.add(params_frame, text="Parametres")
         
         self.fig_params = plt.Figure(figsize=(14, 8))
         
@@ -463,7 +461,7 @@ class FlightSimulatorGUI:
         row = self._create_label_entry(parent, row, "FAF Z (km):", self.faf_z_var)
         row = self._create_separator(parent, row)
         
-        ttk.Button(parent, text="🔄 Appliquer Configuration", 
+        ttk.Button(parent, text="Appliquer Configuration", 
                   command=self._apply_environment_config).grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
         row += 1
         
@@ -489,7 +487,7 @@ class FlightSimulatorGUI:
         row = self._create_separator(scrollable_frame, row + 1) - 1
 
         # Section: Nouveau cylindre
-        row = self._create_section_title(scrollable_frame, row, "➕ Nouveau Cylindre")
+        row = self._create_section_title(scrollable_frame, row, "Nouveau Cylindre")
         self.cyl_x_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['x'])
         self.cyl_y_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['y'])
         self.cyl_radius_var = tk.DoubleVar(value=DEFAULT_CONFIG['cylinders'][0]['radius'])
@@ -498,12 +496,12 @@ class FlightSimulatorGUI:
         row = self._create_label_entry(scrollable_frame, row, "Position Y (km):", self.cyl_y_var)
         row = self._create_label_entry(scrollable_frame, row, "Rayon (km):", self.cyl_radius_var)
         row = self._create_label_entry(scrollable_frame, row, "Hauteur (km):", self.cyl_height_var)
-        ttk.Button(scrollable_frame, text="➕ Ajouter ce Cylindre",
+        ttk.Button(scrollable_frame, text="Ajouter ce Cylindre",
                    command=self._add_cylinder).grid(row=row, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
         row = self._create_separator(scrollable_frame, row + 1) - 1
 
         # Liste des cylindres
-        row = self._create_section_title(scrollable_frame, row, "📋 Cylindres Actifs")
+        row = self._create_section_title(scrollable_frame, row, "Cylindres Actifs")
         list_container = ttk.Frame(scrollable_frame)
         list_container.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         list_scrollbar = ttk.Scrollbar(list_container)
@@ -516,8 +514,8 @@ class FlightSimulatorGUI:
 
         # Boutons de gestion (compactés)
         for btn_texts_cmds in [
-            [("✏️ Éditer Sélectionné", self._edit_selected_cylinder), ("🗑️ Supprimer Sélectionné", self._remove_selected_cylinder)],
-            [("🗑️ Supprimer Dernier", self._remove_last_cylinder), ("🗑️ Tout Supprimer", self._clear_cylinders)]
+            [("Editer Selectionne", self._edit_selected_cylinder), ("Supprimer Selectionne", self._remove_selected_cylinder)],
+            [("Supprimer Dernier", self._remove_last_cylinder), ("Tout Supprimer", self._clear_cylinders)]
         ]:
             btn_frame = ttk.Frame(scrollable_frame)
             btn_frame.grid(row=row, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
@@ -699,7 +697,7 @@ class FlightSimulatorGUI:
             
             # Message de succès
             self.env_info_label.config(
-                text="✅ Configuration appliquée avec succès!",
+                text="Configuration appliquee avec succes!",
                 foreground='green'
             )
             
@@ -711,7 +709,7 @@ class FlightSimulatorGUI:
             
         except ValueError as e:
             self.env_info_label.config(
-                text=f"❌ Erreur: {str(e)}",
+                text=f"Erreur: {str(e)}",
                 foreground='red'
             )
             messagebox.showerror("Erreur", str(e))
@@ -768,7 +766,7 @@ class FlightSimulatorGUI:
                 json.dump(config, f, indent=4, ensure_ascii=False)
             
         except Exception as e:
-            print(f"⚠️  Erreur de sauvegarde: {e}")
+            pass
     
     def _load_config_on_startup(self):
         """Charge silencieusement la configuration au démarrage"""
@@ -813,10 +811,8 @@ class FlightSimulatorGUI:
                                     with open(config_file, 'w', encoding='utf-8') as out:
                                         json.dump(config, out, indent=4, ensure_ascii=False)
                                 except Exception as copy_err:
-                                    # Pas bloquant si on ne peut pas écrire (dossier protégé, etc.)
-                                    print(f"⚠️  Impossible d'écrire config par défaut à {config_file}: {copy_err}")
+                                    pass
                             except Exception as e:
-                                print(f"⚠️  Échec de lecture du config embarqué: {e}")
                                 config = None
             
             if not config:
@@ -880,8 +876,7 @@ class FlightSimulatorGUI:
                 self.num_trajectories_var.set(simulation.get('num_trajectories', DEFAULT_CONFIG['simulation']['num_trajectories']))
             
         except Exception as e:
-            print(f"Erreur lors du chargement de la configuration: {e}")
-            # Continuer avec les valeurs par défaut
+            pass
     
     def _add_cylinder(self):
         """Ajoute un cylindre (obstacle) à l'environnement"""
@@ -1146,10 +1141,7 @@ class FlightSimulatorGUI:
         
         # Trajectoire principale
         if self.trajectory is not None:
-            if self.trajectory_params and self.trajectory_params.get('has_altitude_turns', False):
-                self._draw_spiral_trajectory_2d()
-            else:
-                self._draw_normal_trajectory_2d()
+            self._draw_normal_trajectory_2d()
             self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 'g-', linewidth=2, alpha=0.9)
             self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 'g-', linewidth=2, alpha=0.9)
         
@@ -1171,101 +1163,6 @@ class FlightSimulatorGUI:
         if handles:
             self.ax_legend.legend(handles, labels, loc='center', fontsize=10, framealpha=0.9)
         self.canvas_2d.draw()
-    
-    def _draw_spiral_trajectory_2d(self):
-        """Dessine une trajectoire avec spirales de manière visible dans les vues 2D"""
-        spiral_points = self.trajectory_params.get('spiral_points', 0)
-        
-        if spiral_points > 0:
-            # Partie 1: Spirale (tours automatiques) avec visualisation améliorée
-            spiral_trajectory = self.trajectory[:spiral_points]
-            normal_trajectory = self.trajectory[spiral_points:]
-            
-            # Dessiner la spirale avec des couleurs dégradées pour chaque tour
-            self._draw_enhanced_spiral_xy(spiral_trajectory)
-            
-            # Dessiner la trajectoire normale après la spirale
-            if len(normal_trajectory) > 0:
-                self.ax_xy.plot(normal_trajectory[:, 0], normal_trajectory[:, 1], 
-                               'limegreen', linewidth=3, label='→ Vers FAF', alpha=0.9, zorder=3)
-        else:
-            # Pas de spirale, dessiner normalement
-            self._draw_normal_trajectory_2d()
-        
-        # Dessiner dans les autres vues (XZ et YZ) avec couleurs normales
-        self.ax_xz.plot(self.trajectory[:, 0], self.trajectory[:, 2], 
-                       'purple', linewidth=2, label='Trajectoire', alpha=0.8)
-        self.ax_yz.plot(self.trajectory[:, 1], self.trajectory[:, 2], 
-                       'purple', linewidth=2, label='Trajectoire', alpha=0.8)
-    
-    def _draw_enhanced_spiral_xy(self, spiral_trajectory):
-        """Dessine une spirale avec visualisation améliorée dans la vue XY"""
-        if len(spiral_trajectory) < 100:
-            # Spirale trop courte, dessiner normalement
-            self.ax_xy.plot(spiral_trajectory[:, 0], spiral_trajectory[:, 1], 
-                           'orange', linewidth=2, label='Tours', alpha=0.8)
-            return
-        
-        # Calculer le nombre de tours approximatif
-        n_points = len(spiral_trajectory)
-        estimated_turns = self.trajectory_params.get('turns_completed', 1)
-        points_per_turn = max(100, n_points // max(1, int(estimated_turns)))
-        
-        # Couleurs pour les tours successifs
-        turn_colors = ['red', 'darkorange', 'gold', 'orange', 'yellow', 'coral']
-        
-        # Dessiner chaque tour avec une couleur différente et épaisseur variable
-        turn_number = 0
-        for i in range(0, n_points, points_per_turn):
-            end_idx = min(i + points_per_turn, n_points)
-            if end_idx - i < 10:  # Segment trop court
-                continue
-                
-            segment = spiral_trajectory[i:end_idx]
-            color = turn_colors[turn_number % len(turn_colors)]
-            
-            # Épaisseur décroissante pour montrer la progression
-            linewidth = 4 - (turn_number * 0.5)
-            linewidth = max(1.5, linewidth)
-            
-            # Transparence croissante pour les tours plus anciens
-            alpha = 1.0 - (turn_number * 0.15)
-            alpha = max(0.4, alpha)
-            
-            label = f'Tour {turn_number + 1}' if turn_number < 3 else None
-            
-            self.ax_xy.plot(segment[:, 0], segment[:, 1], 
-                           color=color, linewidth=linewidth, label=label, 
-                           alpha=alpha, zorder=4 + turn_number)
-            
-            # Ajouter des flèches directionnelles sur chaque tour
-            if len(segment) > 20:
-                mid_idx = len(segment) // 2
-                if mid_idx + 5 < len(segment):
-                    # Direction de la flèche
-                    dx = segment[mid_idx + 5, 0] - segment[mid_idx, 0]
-                    dy = segment[mid_idx + 5, 1] - segment[mid_idx, 1]
-                    
-                    # Normaliser et ajuster la taille
-                    length = np.sqrt(dx*dx + dy*dy)
-                    if length > 0:
-                        arrow_scale = 0.3
-                        dx = (dx / length) * arrow_scale
-                        dy = (dy / length) * arrow_scale
-                        
-                        self.ax_xy.arrow(segment[mid_idx, 0], segment[mid_idx, 1], 
-                                        dx, dy, head_width=0.2, head_length=0.15, 
-                                        fc=color, ec=color, alpha=alpha*1.2, 
-                                        linewidth=1, zorder=6)
-            
-            turn_number += 1
-        
-        # Marquer le centre de la spirale
-        if len(spiral_trajectory) > 10:
-            center_x = np.mean(spiral_trajectory[:, 0])
-            center_y = np.mean(spiral_trajectory[:, 1])
-            self.ax_xy.scatter(center_x, center_y, c='darkred', marker='x', s=100, 
-                              label='Centre spirale', zorder=7, linewidth=3)
     
     def _draw_normal_trajectory_2d(self):
         """Dessine une trajectoire normale (sans spirales) dans les vues 2D"""
@@ -1294,7 +1191,7 @@ class FlightSimulatorGUI:
                                'g-', linewidth=2, label='Sur piste', alpha=0.9)
         
         elif self.trajectory_params and 'turn_radius' in self.trajectory_params:
-            # Vérifier s'il y a un segment initial (2 phases: vol initial → virage jusqu'au FAF)
+            # Verifier s'il y a un segment initial (2 phases: vol initial -> virage jusqu'au FAF)
             if 'initial_segment_end_index' in self.trajectory_params:
                 initial_end = self.trajectory_params['initial_segment_end_index']
                 turn_end = self.trajectory_params['turn_segment_end_index']
@@ -1316,7 +1213,7 @@ class FlightSimulatorGUI:
                     
                     self.ax_xy.plot(self.trajectory[split_idx:turn_end, 0], 
                                    self.trajectory[split_idx:turn_end, 1], 
-                                   'limegreen', linewidth=2, label='Alignement→FAF', alpha=0.9)
+                                   'limegreen', linewidth=2, label='Alignement->FAF', alpha=0.9)
             else:
                 # Trajectoire simple (pas de phases)
                 self.ax_xy.plot(self.trajectory[:, 0], self.trajectory[:, 1], 
@@ -1610,30 +1507,30 @@ class FlightSimulatorGUI:
                                 self.trajectory_params.get('turn_rate'))
             
             # Message de succès avec informations
-            info_msg = "✅ Simulation terminée!\n\n"
-            info_msg += f"📊 Distance totale: {self.trajectory_params['distance']:.2f} km\n"
-            info_msg += f"⏱️  Temps de vol: {self.trajectory_params['flight_time']*60:.1f} minutes\n"
-            info_msg += f"📍 Points de trajectoire: {self.trajectory_params.get('n_points', len(self.trajectory))}\n"
+            info_msg = "Simulation terminee!\n\n"
+            info_msg += f"Distance totale: {self.trajectory_params['distance']:.2f} km\n"
+            info_msg += f"Temps de vol: {self.trajectory_params['flight_time']*60:.1f} minutes\n"
+            info_msg += f"Points de trajectoire: {self.trajectory_params.get('n_points', len(self.trajectory))}\n"
             
             # Information sur la vitesse
-            info_msg += f"\n✈️  Vitesse: {self.aircraft.speed:.1f} km/h (constante)\n"
+            info_msg += f"\nVitesse: {self.aircraft.speed:.1f} km/h (constante)\n"
             
             # Informations sur le virage (nouvelle trajectoire avec virages)
             if 'turn_radius' in self.trajectory_params:
-                info_msg += f"\n🔄 Rayon de virage: {self.trajectory_params['turn_radius']:.3f} km\n"
-                info_msg += f"🎯 Angle de virage: {abs(self.trajectory_params['turn_angle']):.1f}°\n"
+                info_msg += f"\nRayon de virage: {self.trajectory_params['turn_radius']:.3f} km\n"
+                info_msg += f"Angle de virage: {abs(self.trajectory_params['turn_angle']):.1f}°\n"
                 intercept = self.trajectory_params['intercept_point']
-                info_msg += f"📍 Point d'interception: ({intercept[0]:.2f}, {intercept[1]:.2f}) km\n"
+                info_msg += f"Point d'interception: ({intercept[0]:.2f}, {intercept[1]:.2f}) km\n"
             
             if 'level_flight_distance' in self.trajectory_params:
-                info_msg += f"\n🛫 Vol en palier: {self.trajectory_params['level_flight_distance']:.2f} km\n"
+                info_msg += f"\nVol en palier: {self.trajectory_params['level_flight_distance']:.2f} km\n"
                 
                 if 'transition_distance' in self.trajectory_params:
-                    info_msg += f"🔄 Transition progressive: {self.trajectory_params['transition_distance']:.2f} km\n"
+                    info_msg += f"Transition progressive: {self.trajectory_params['transition_distance']:.2f} km\n"
                 
-                info_msg += f"🛬 Distance de descente: {self.trajectory_params['descent_distance']:.2f} km\n"
+                info_msg += f"Distance de descente: {self.trajectory_params['descent_distance']:.2f} km\n"
                 actual_slope = np.min(self.trajectory_params['slope'])
-                info_msg += f"📐 Pente de descente: {actual_slope:.2f}° (max: {self.aircraft.max_descent_slope:.1f}°)"
+                info_msg += f"Pente de descente: {actual_slope:.2f}° (max: {self.aircraft.max_descent_slope:.1f}°)"
             
             messagebox.showinfo("Succès", info_msg)
             
@@ -1812,10 +1709,10 @@ class FlightSimulatorGUI:
             # Message de résultats
             if successful_simulations > 0:
                 total_trajectories = len(self.multiple_trajectories)
-                info_msg = f"✅ {successful_simulations}/{num_trajectories} nouvelles simulations réussies!\n"
-                info_msg += f"📊 Total des trajectoires affichées: {total_trajectories}\n\n"
+                info_msg = f"{successful_simulations}/{num_trajectories} nouvelles simulations reussies!\n"
+                info_msg += f"Total des trajectoires affichees: {total_trajectories}\n\n"
                 if failed_positions > 0:
-                    info_msg += f"⚠️ {failed_positions} tentatives échouées (numéros: {', '.join(map(str, failed_attempts))})\n\n"
+                    info_msg += f"{failed_positions} tentatives echouees (numeros: {', '.join(map(str, failed_attempts))})\n\n"
                 
                 info_msg += "Les trajectoires sont affichées avec des couleurs différentes:\n"
                 colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']

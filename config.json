@@ -35,16 +35,16 @@
         }
     ],
     "aircraft": {
-        "type": "light",
+        "type": "commercial",
         "position": {
             "x": 155.0,
             "y": 160.0,
             "z": 3.0
         },
-        "speed": 180.0,
-        "heading": 90.0,
-        "max_climb_slope": 15.0,
-        "max_descent_slope": -10.0
+        "speed": 250.0,
+        "heading": 94.0,
+        "max_climb_slope": 10.0,
+        "max_descent_slope": -6.0
     },
     "simulation": {
         "num_trajectories": 5

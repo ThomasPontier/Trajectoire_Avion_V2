@@ -36,32 +36,6 @@ python main.py
 
 ---
 
-## Interface
-
-### 4 Onglets Principaux
-
-**Configuration**
-- Environnement (dimensions, aéroport, FAF)
-- Obstacles cylindriques 
-- Types d'avions (léger/commercial/cargo)
-- Simulations multiples (1-50 trajectoires)
-
-**Vue 3D**
-- Visualisation interactive
-- Navigation : rotation, zoom, pan
-- Trajectoire colorée par phase
-
-**Vues 2D**
-- Plans XY, XZ, YZ
-- Projections orthogonales
-
-**Paramètres**
-- Graphiques altitude/vitesse/pente
-- Analyse temporelle
-
----
-
-
 ## Build Exécutable
 
 ```powershell
@@ -82,31 +56,5 @@ Fichier `config.json` auto-sauvegardé :
 
 ---
 
-## Schémas Techniques (Dossier `schemas_rapport/`)
-
-### Visualisation des Schémas
-
-**Extensions VS Code requises :**
-
-1. **Pour les fichiers `.drawio`** (trajectoires visuelles) :
-   - Extension : **Draw.io Integration** 
-
-
-2. **Pour les fichiers `.md`** (diagrammes Mermaid) :
-   - Extension : **Markdown Preview Mermaid Support**
-   
-### Contenu des Schémas
-
-**Schémas Draw.io** (trajectoires 3D) :
-- `01_trajectoires_types.drawio` - 4 types de trajectoires avec formules
-- `06_evitement_obstacles.drawio` - Stratégie d'évitement waypoints tangents
-
-**Diagrammes Mermaid** (architecture et logique) :
-- `02_architecture_systeme.md` - Architecture modulaire hiérarchique
-- `03_decomposition_trajectory_calculator.md` - Arborescence fonctionnelle détaillée
-- `04_flux_decision_calcul.md` - Flowchart logique de décision
-- `05_gestion_altitude_3_phases.md` - Profil vertical en 3 phases
-
----
-
 **GitHub** : [Trajectoire_Avion_V2](https://github.com/ThomasPontier/Trajectoire_Avion_V2)
+

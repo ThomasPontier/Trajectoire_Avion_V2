@@ -49,28 +49,28 @@ def create_multi_resolution_ico(png_path, ico_path):
             file_size = os.path.getsize(ico_path)
             if file_size < 5000:  # Moins de 5 Ko = problème probable
                 # Fallback : créer une icône simple avec la plus grande taille
-                print(f"⚠️  Icône multi-résolutions trop petite ({file_size} octets), création d'une icône simple...")
+                print(f"Icone multi-resolutions trop petite ({file_size} octets), creation d'une icone simple...")
                 largest_img = img.resize((256, 256), Image.Resampling.LANCZOS)
                 largest_img.save(ico_path, format='ICO')
                 file_size = os.path.getsize(ico_path)
             
-            print(f"✅ Icône multi-résolutions créée : {ico_path} ({file_size:,} octets)")
+            print(f"Icone multi-resolutions creee : {ico_path} ({file_size:,} octets)")
             return True
             
     except ImportError as e:
-        print(f"❌ Pillow n'est pas installé : {e}")
-        print("📦 Installation de Pillow...")
+        print(f"Pillow n'est pas installe : {e}")
+        print("Installation de Pillow...")
         import subprocess
         import sys
         try:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
-            print("✅ Pillow installé, relancez le build")
+            print("Pillow installe, relancez le build")
         except Exception:
-            print("❌ Impossible d'installer Pillow automatiquement")
+            print("Impossible d'installer Pillow automatiquement")
         return False
         
     except Exception as e:
-        print(f"❌ Erreur lors de la création de l'icône : {e}")
+        print(f"Erreur lors de la creation de l'icone : {e}")
         return False
 
 
@@ -98,22 +98,22 @@ def create_simple_ico(png_path, ico_path):
             # Sauvegarder
             img.save(ico_path, format='ICO')
             
-            print(f"✅ Icône simple créée : {ico_path}")
+            print(f"Icone simple creee : {ico_path}")
             return True
             
     except Exception as e:
-        print(f"❌ Erreur lors de la création de l'icône simple : {e}")
+        print(f"Erreur lors de la creation de l'icone simple : {e}")
         return False
 
 
 if __name__ == "__main__":
     # Test du module
     if os.path.exists("logo.png"):
-        print("🧪 Test de création d'icône...")
+        print("Test de creation d'icone...")
         if create_multi_resolution_ico("logo.png", "test_logo.ico"):
             size = os.path.getsize("test_logo.ico")
-            print(f"✅ Test réussi : {size:,} octets")
+            print(f"Test reussi : {size:,} octets")
         else:
-            print("❌ Test échoué")
+            print("Test echoue")
     else:
-        print("❌ Fichier logo.png introuvable pour le test")
+        print("Fichier logo.png introuvable pour le test")

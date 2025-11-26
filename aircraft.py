@@ -101,25 +101,6 @@ class Aircraft:
             'max_descent_slope': self.max_descent_slope
         }
     
-    def calculate_min_turn_radius(self, speed=None):
-        """
-        Calcule le rayon de virage minimal basé sur la vitesse
-        
-        Args:
-            speed: Vitesse en km/h (si None, utilise la vitesse actuelle de l'avion)
-        
-        Returns:
-            float: Rayon minimal en km
-        """
-        if speed is None:
-            speed = self.speed
-            
-        v_ms = speed / 3.6  # Conversion km/h → m/s
-        g = 9.81
-        bank_angle_rad = np.radians(self.max_bank_angle)
-        radius_m = (v_ms ** 2) / (g * np.tan(bank_angle_rad))
-        return radius_m / 1000.0  # Retour en km
-    
     def __str__(self):
         """Représentation textuelle de l'avion"""
         return (f"{self.specs['name']} at ({self.position[0]:.2f}, {self.position[1]:.2f}, "

@@ -1,0 +1,129 @@
+<mxfile host="65bd71144e">
+    <diagram id="AvoidanceStrategy" name="Évitement Obstacles">
+        <mxGraphModel dx="285" dy="321" grid="0" gridSize="10" guides="1" tooltips="0" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1400" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="STRATÉGIE D&#39;ÉVITEMENT D&#39;OBSTACLES PAR WAYPOINTS TANGENTS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#000000;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="30" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="VUE GÉNÉRALE - Principe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="50" y="100" width="600" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="Start" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="100" y="200" width="70" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="FAF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="550" y="200" width="70" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=70;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="175" width="100" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Obstacle" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="320" y="215" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#CC0000;dashed=1;dashPattern=8 8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="4" target="5" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="Trajet direct (COLLISION)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#CC0000;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="386" y="250" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="WP1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="230" y="150" width="50" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="WP2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="420" y="150" width="50" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="4" target="5" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="200" y="210"/>
+                            <mxPoint x="255" y="167"/>
+                            <mxPoint x="350" y="140"/>
+                            <mxPoint x="445" y="167"/>
+                            <mxPoint x="500" y="210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="13" value="Trajectoire d&#39;évitement" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#0066CC;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="374" y="130" width="130" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="R" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#CC0000" parent="1" vertex="1">
+                    <mxGeometry x="355" y="210" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#CC0000;dashed=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="350" y="225" as="sourcePoint"/>
+                        <mxPoint x="300" y="225" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="16" value="0.5 km" style="text;html=1;strokeColor=none;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=8;fontStyle=1;fontColor=#000000" parent="1" vertex="1">
+                    <mxGeometry x="250" y="137" width="40" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=1;strokeColor=#9c27b0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="255" y="155" as="sourcePoint"/>
+                        <mxPoint x="255" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="18" value="80% × R" style="text;html=1;strokeColor=none;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=8;fontStyle=1;fontColor=#000000" parent="1" vertex="1">
+                    <mxGeometry x="190" y="190" width="50" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=1;strokeColor=#9c27b0;dashed=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="210" y="205" as="sourcePoint"/>
+                        <mxPoint x="255" y="205" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="20" value="CALCULS GÉOMÉTRIQUES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="50" y="320" width="600" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="ÉTAPE A: Projection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="70" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="• Projeter centre obstacle&#xa;  sur trajectoire directe&#xa;• Calculer distance&#xa;  perpendiculaire&#xa;&#xa;proj_length = dot(vec, dir)&#xa;dist = norm(centre - proj)" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="400" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="ÉTAPE B: Vérification" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="260" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="• SI dist &lt; (rayon + 0.5 km)&#xa;  → COLLISION détectée&#xa;&#xa;• Marge sécurité = 0.5 km&#xa;&#xa;• Calculer vecteur perp&#xa;  perp = [-dir_y, dir_x]" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="400" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="ÉTAPE C: Waypoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="450" y="370" width="160" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="• approach_dist = &#xa;  max(rayon × 0.8, 1.0 km)&#xa;&#xa;• WP_entry = proj - approach&#xa;• WP_exit = proj + approach&#xa;&#xa;• offset_lateral = &#xa;  (rayon - dist) + 0.5 km" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="400" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="FORMULES CLÉS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="70" y="510" width="540" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="⚙️ PARAMÈTRES SYSTÈME&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;safety_margin = 0.5 km                    (marge sécurité latérale)&#xa;altitude_margin = 0.5 km                  (marge sécurité verticale)&#xa;approach_factor = 0.8                     (80% du rayon pour distance approche)&#xa;min_approach = 1.0 km                     (distance approche minimale)&#xa;&#xa;📐 CALCULS GÉOMÉTRIQUES&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;vec_to_cylinder = Centre - Start&#xa;proj_length = dot(vec_to_cylinder, traj_direction)&#xa;P_projection = Start + proj_length × traj_direction&#xa;distance_perpendiculaire = norm(Centre - P_projection)&#xa;&#xa;⚠️ DÉTECTION COLLISION&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;cyl_radius_safe = cylinder.radius + safety_margin&#xa;IF distance_perpendiculaire &lt; cyl_radius_safe THEN collision détectée&#xa;&#xa;🔄 CONTOURNEMENT&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;vecteur_perpendiculaire = [-traj_dir_y, traj_dir_x]&#xa;side = sign(cross_product)                // choix côté optimal&#xa;approach_distance = max(cyl_radius × 0.8, 1.0)&#xa;offset_lateral = (rayon - distance_perp) + safety_margin&#xa;&#xa;📍 WAYPOINTS TANGENTS&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;entry_pos = proj_length - approach_distance&#xa;exit_pos = proj_length + approach_distance&#xa;WP_entry = entry_base + side × perp × offset_lateral&#xa;WP_exit = exit_base + side × perp × offset_lateral" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8;fontFamily=Courier New;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="540" width="540" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="PARAMÈTRES DÉTAILLÉS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#9c27b0;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="700" y="100" width="300" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="💡 VALEURS NUMÉRIQUES&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;Marge sécurité latérale:    0.5 km (500m)&#xa;Marge sécurité verticale:   0.5 km (500m)&#xa;&#xa;📏 CALCUL APPROCHE&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;Facteur d'approche:         80% du rayon&#xa;Distance approche min:      1.0 km&#xa;&#xa;Formule: approach_distance = max(R × 0.8, 1.0)&#xa;&#xa;Exemple: Si R = 2 km → 1.6 km&#xa;         Si R = 0.5 km → 1.0 km (min)&#xa;&#xa;🎯 LISSAGE TRAJECTOIRE&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;Points Bézier:              150 pts/km&#xa;Continuité:                 C² (courbure)&#xa;Validation finale:          clearance minimale" style="text;html=1;strokeColor=#9c27b0;fillColor=#e1bee7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="130" width="300" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="AVANTAGES DE LA MÉTHODE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="100" width="320" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="✓ Minimise déviation trajectoire&#xa;✓ Garantit clearance sécurité (500m)&#xa;✓ Continuité C² avec courbes Bézier&#xa;✓ Adaptable à obstacles multiples&#xa;✓ Validation collision check finale&#xa;&#xa;📊 EFFICACITÉ CONTOURNEMENT&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;• Distance approche réduite à 80% du rayon&#xa;  → Trajectoire plus courte&#xa;&#xa;• Approche tangente au périmètre&#xa;  → Déviation minimale&#xa;&#xa;• Offset calculé dynamiquement&#xa;  → Adaptation au contexte&#xa;&#xa;🛡️ SÉCURITÉ&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;• Marge systématique: 500m (latéral + vertical)&#xa;• Distance min garantie: 1.0 km avant obstacle&#xa;• Validation géométrique post-calcul" style="text;html=1;strokeColor=#4caf50;fillColor=#c8e6c9;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="1030" y="130" width="320" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" value="EXEMPLE NUMÉRIQUE DÉTAILLÉ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="700" y="390" width="650" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="🔢 CAS PRATIQUE: Obstacle avec rayon R = 2.0 km&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;&#xa;📍 DONNÉES INITIALES&#xa;  • Rayon obstacle (R):              2.0 km&#xa;  • Distance perpendiculaire:        0.8 km (trajectoire traverse l'obstacle)&#xa;  • Marge sécurité:                  0.5 km&#xa;&#xa;⚙️ CALCULS INTERMÉDIAIRES&#xa;  • Rayon sécurisé:                  2.0 + 0.5 = 2.5 km&#xa;  • Condition collision:             0.8 &lt; 2.5 km → OUI, collision détectée!&#xa;  • Distance approche:               max(2.0 × 0.8, 1.0) = max(1.6, 1.0) = 1.6 km&#xa;  • Offset latéral:                  (2.0 - 0.8) + 0.5 = 1.7 km&#xa;&#xa;📐 POSITIONNEMENT WAYPOINTS&#xa;  • WP_entry:   proj_length - 1.6 km  (décalé de 1.7 km perpendiculairement)&#xa;  • WP_exit:    proj_length + 1.6 km  (décalé de 1.7 km perpendiculairement)&#xa;  • Distance totale contournement:    ~5.4 km au lieu de trajet direct&#xa;  • Clearance garantie:               2.5 km minimum du centre obstacle&#xa;&#xa;✅ RÉSULTAT: Évitement optimal avec déviation minimale et sécurité maximale!" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="420" width="650" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="70" value="📝 NOTE TECHNIQUE: Les waypoints sont calculés pour longer tangentiellement le périmètre de l'obstacle&#xa;avec une distance d'approche optimisée (80% du rayon, minimum 1 km) et une marge de sécurité constante de 500m,&#xa;minimisant ainsi la déviation de trajectoire tout en garantissant un niveau de sécurité optimal." style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="680" width="650" height="50" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
