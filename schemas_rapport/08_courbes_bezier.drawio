@@ -1,19 +1,12 @@
 <mxfile host="65bd71144e">
     <diagram id="BezierCurves" name="Courbes de Bézier">
-        <mxGraphModel dx="285" dy="321" grid="0" gridSize="10" guides="1" tooltips="0" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1600" math="0" shadow="0">
+        <mxGraphModel dx="3234" dy="742" grid="0" gridSize="10" guides="1" tooltips="0" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1600" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
                 <mxCell id="2" value="SCHÉMA 2: CALCUL DES COURBES DE BÉZIER CUBIQUES" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#000000;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="30" width="1000" height="40" as="geometry"/>
+                    <mxGeometry x="-88" y="45" width="1000" height="40" as="geometry"/>
                 </mxCell>
-                
-                <!-- Principe Bézier cubique -->
-                <mxCell id="10" value="PRINCIPE DE LA COURBE DE BÉZIER CUBIQUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="100" y="100" width="600" height="30" as="geometry"/>
-                </mxCell>
-                
-                <!-- Points de contrôle -->
                 <mxCell id="11" value="P0" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" parent="1" vertex="1">
                     <mxGeometry x="150" y="220" width="50" height="40" as="geometry"/>
                 </mxCell>
@@ -26,8 +19,6 @@
                 <mxCell id="14" value="P3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" parent="1" vertex="1">
                     <mxGeometry x="600" y="220" width="50" height="40" as="geometry"/>
                 </mxCell>
-                
-                <!-- Lignes de contrôle -->
                 <mxCell id="15" value="" style="endArrow=none;html=1;strokeWidth=1;strokeColor=#999999;dashed=1;dashPattern=4 4;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="175" y="240" as="sourcePoint"/>
@@ -46,8 +37,6 @@
                         <mxPoint x="625" y="240" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                
-                <!-- Courbe Bézier -->
                 <mxCell id="18" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=3;strokeColor=#0066CC;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="175" y="240" as="sourcePoint"/>
@@ -64,8 +53,6 @@
                 <mxCell id="19" value="Courbe B(t)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#0066CC;fontStyle=1" parent="1" vertex="1">
                     <mxGeometry x="360" y="150" width="80" height="20" as="geometry"/>
                 </mxCell>
-                
-                <!-- Légendes points -->
                 <mxCell id="20" value="Waypoint départ" style="text;html=1;strokeColor=none;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=8;fontStyle=1" parent="1" vertex="1">
                     <mxGeometry x="140" y="265" width="70" height="20" as="geometry"/>
                 </mxCell>
@@ -78,8 +65,6 @@
                 <mxCell id="23" value="Waypoint arrivée" style="text;html=1;strokeColor=none;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=8;fontStyle=1" parent="1" vertex="1">
                     <mxGeometry x="590" y="265" width="70" height="20" as="geometry"/>
                 </mxCell>
-                
-                <!-- Distance contrôle -->
                 <mxCell id="24" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=1;strokeColor=#9c27b0;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="200" y="240" as="sourcePoint"/>
@@ -88,43 +73,6 @@
                 </mxCell>
                 <mxCell id="25" value="35% × segment_dist" style="text;html=1;strokeColor=none;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=8;fontStyle=1;fontFamily=Consolas;" parent="1" vertex="1">
                     <mxGeometry x="210" y="200" width="100" height="18" as="geometry"/>
-                </mxCell>
-                
-                <!-- Formule mathématique -->
-                <mxCell id="30" value="📐 FORMULE MATHÉMATIQUE DE BÉZIER CUBIQUE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="100" y="310" width="600" height="25" as="geometry"/>
-                </mxCell>
-                <mxCell id="31" value="Pour t ∈ [0, 1], la position sur la courbe est donnée par:&#xa;&#xa;B(t) = (1-t)³ × P0 + 3(1-t)² × t × P1 + 3(1-t) × t² × P2 + t³ × P3&#xa;&#xa;Où:&#xa;  • t = 0           → Position = P0 (départ)&#xa;  • t = 0.5         → Position au milieu de la courbe&#xa;  • t = 1           → Position = P3 (arrivée)&#xa;  • P0, P1, P2, P3  → Points de contrôle en 2D (x, y)&#xa;&#xa;Propriétés importantes:&#xa;  ✓ La courbe passe exactement par P0 et P3&#xa;  ✓ La tangente en P0 est dirigée vers P1&#xa;  ✓ La tangente en P3 vient de P2&#xa;  ✓ La courbe reste dans l'enveloppe convexe des 4 points&#xa;  ✓ Continuité C² (position, tangente et courbure continues)" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=9;fontFamily=Consolas;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="340" width="600" height="170" as="geometry"/>
-                </mxCell>
-                
-                <!-- Calcul des points de contrôle -->
-                <mxCell id="40" value="🔧 CALCUL DES POINTS DE CONTRÔLE DANS LE CODE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="100" y="540" width="600" height="25" as="geometry"/>
-                </mxCell>
-                <mxCell id="41" value="ÉTAPE 1: Définir les waypoints de départ et d'arrivée&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;P0_seg = wp_start          // Waypoint de départ du segment&#xa;P3_seg = wp_end            // Waypoint d'arrivée du segment&#xa;segment_distance = norm(P3_seg - P0_seg)&#xa;&#xa;ÉTAPE 2: Calculer le point de contrôle P1 (tangente au départ)&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;SI premier segment (après vol initial):&#xa;    direction = current_direction   // Direction de l'avion au départ&#xa;    P1_seg = P0_seg + direction × (segment_distance × 0.35)&#xa;SINON:&#xa;    prev_dir = (wp_start - waypoint_precedent)&#xa;    prev_dir = prev_dir / norm(prev_dir)  // Normaliser&#xa;    P1_seg = P0_seg + prev_dir × (segment_distance × 0.35)&#xa;&#xa;ÉTAPE 3: Calculer le point de contrôle P2 (tangente à l'arrivée)&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;SI dernier segment (vers FAF):&#xa;    runway_dir = direction_piste    // Direction vers l'aéroport&#xa;    P2_seg = P3_seg - runway_dir × (segment_distance × 0.35)&#xa;SINON:&#xa;    next_dir = (waypoint_suivant - wp_end)&#xa;    next_dir = next_dir / norm(next_dir)  // Normaliser&#xa;    P2_seg = P3_seg - next_dir × (segment_distance × 0.35)&#xa;&#xa;ÉTAPE 4: Générer les points sur la courbe&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;n_segment = max(100, int(segment_distance × 150))  // 150 points par km&#xa;&#xa;POUR i de 0 à n_segment-1:&#xa;    t_local = i / (n_segment - 1)&#xa;    &#xa;    pos_2d = (1-t_local)³ × P0_seg +&#xa;             3 × (1-t_local)² × t_local × P1_seg +&#xa;             3 × (1-t_local) × t_local² × P2_seg +&#xa;             t_local³ × P3_seg&#xa;    &#xa;    // pos_2d contient maintenant (x, y) du point i sur la courbe" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8;fontFamily=Consolas;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="570" width="600" height="380" as="geometry"/>
-                </mxCell>
-                
-                <!-- Exemple numérique -->
-                <mxCell id="50" value="💡 EXEMPLE NUMÉRIQUE COMPLET" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="750" y="100" width="600" height="25" as="geometry"/>
-                </mxCell>
-                <mxCell id="51" value="DONNÉES D'ENTRÉE:&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;• wp_start = (5.0, 8.0)           [km]  // End initial flight&#xa;• wp_end = (12.0, 10.0)          [km]  // WP entry obstacle&#xa;• current_direction = (0.866, 0.5)     // Direction avion (heading 30°)&#xa;• segment_distance = 7.28 km&#xa;&#xa;CALCUL DES POINTS DE CONTRÔLE:&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;P0 = (5.0, 8.0)&#xa;P3 = (12.0, 10.0)&#xa;&#xa;control_distance = 7.28 × 0.35 = 2.548 km&#xa;&#xa;P1 = P0 + current_direction × control_distance&#xa;   = (5.0, 8.0) + (0.866, 0.5) × 2.548&#xa;   = (5.0 + 2.206, 8.0 + 1.274)&#xa;   = (7.206, 9.274)&#xa;&#xa;seg_dir = (P3 - P0) / norm(P3 - P0)&#xa;        = (7.0, 2.0) / 7.28&#xa;        = (0.962, 0.275)&#xa;&#xa;P2 = P3 - seg_dir × control_distance&#xa;   = (12.0, 10.0) - (0.962, 0.275) × 2.548&#xa;   = (12.0 - 2.451, 10.0 - 0.701)&#xa;   = (9.549, 9.299)&#xa;&#xa;GÉNÉRATION DES POINTS (exemple avec n=1092 points, soit 150 pts/km):&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;Pour t = 0.0:     B(0.0) = (5.000, 8.000)     ✓ Point de départ&#xa;Pour t = 0.25:    B(0.25) ≈ (6.691, 8.862)&#xa;Pour t = 0.5:     B(0.5) ≈ (8.441, 9.393)     Point milieu de la courbe&#xa;Pour t = 0.75:    B(0.75) ≈ (10.309, 9.701)&#xa;Pour t = 1.0:     B(1.0) = (12.000, 10.000)   ✓ Point d'arrivée&#xa;&#xa;DENSITÉ DE POINTS:&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;• Total points ce segment: 1092 points&#xa;• Distance entre points: 7.28 / 1092 ≈ 6.67 mètres&#xa;• Garantit un tracé extrêmement lisse et précis&#xa;&#xa;✅ RÉSULTAT: Courbe parfaitement lisse reliant les waypoints avec continuité C²" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8;fontFamily=Consolas;" parent="1" vertex="1">
-                    <mxGeometry x="750" y="130" width="600" height="450" as="geometry"/>
-                </mxCell>
-                
-                <!-- Multiple segments -->
-                <mxCell id="60" value="🔗 CONTINUITÉ ENTRE SEGMENTS MULTIPLES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="750" y="610" width="600" height="25" as="geometry"/>
-                </mxCell>
-                <mxCell id="61" value="Lorsqu'il y a plusieurs waypoints d'évitement (obstacles multiples), plusieurs courbes&#xa;de Bézier sont générées consécutivement:&#xa;&#xa;SEGMENT 1: End_initial → WP_entry_1&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;P0 = End_initial&#xa;P1 = P0 + current_direction × (dist1 × 0.35)&#xa;P2 = P3 - direction_vers_WPentry1 × (dist1 × 0.35)&#xa;P3 = WP_entry_1&#xa;&#xa;SEGMENT 2: WP_entry_1 → WP_exit_1&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;P0 = WP_entry_1&#xa;P1 = P0 + direction_segment1 × (dist2 × 0.35)     // Continuité tangente!&#xa;P2 = P3 - direction_vers_WPexit1 × (dist2 × 0.35)&#xa;P3 = WP_exit_1&#xa;&#xa;SEGMENT 3: WP_exit_1 → FAF&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;P0 = WP_exit_1&#xa;P1 = P0 + direction_segment2 × (dist3 × 0.35)     // Continuité tangente!&#xa;P2 = P3 - runway_direction × (dist3 × 0.35)&#xa;P3 = FAF&#xa;&#xa;🎯 GARANTIE DE CONTINUITÉ:&#xa;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━&#xa;Le point de contrôle P1 d'un segment utilise la direction du segment précédent,&#xa;assurant que la tangente à la jonction soit identique de chaque côté.&#xa;→ Pas de cassure, trajectoire parfaitement fluide pour l'avion!" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=8;fontFamily=Consolas;" parent="1" vertex="1">
-                    <mxGeometry x="750" y="640" width="600" height="310" as="geometry"/>
-                </mxCell>
-                
-                <!-- Note finale -->
-                <mxCell id="70" value="💡 AVANTAGE CLÉS: Les courbes de Bézier cubiques permettent une trajectoire extrêmement fluide avec continuité&#xa;de position (C⁰), tangente (C¹) et courbure (C²), essentiel pour un vol confortable et des manœuvres réalistes." style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;fontFamily=Consolas;" parent="1" vertex="1">
-                    <mxGeometry x="100" y="980" width="1250" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

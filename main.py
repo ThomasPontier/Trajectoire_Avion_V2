@@ -12,7 +12,7 @@ from aircraft import Aircraft, AircraftType
 from trajectory_calculator import TrajectoryCalculator
 
 
-# Configuration par défaut (utilisée si aucun fichier config n'est trouvé)
+# Configuration par défaut
 DEFAULT_CONFIG = {
     "environment": {
         "size_x": 100.0,
@@ -51,7 +51,7 @@ class FlightSimulatorGUI:
         self.environment = None
         self.aircraft = None
         self.trajectory = None
-        self.trajectory_params = None  # Stocker les paramètres de la trajectoire
+        self.trajectory_params = None  
         self.cylinders = []  # Liste des cylindres (obstacles)
         
         # Variables pour les simulations multiples
@@ -75,11 +75,8 @@ class FlightSimulatorGUI:
         
         # Créer l'environnement initial
         self._update_environment()
-        
-        # Dessiner l'environnement avec les cylindres chargés
         self._draw_environment()
     
-    # ========== MÉTHODES UTILITAIRES GÉNÉRIQUES ==========
     
     def _create_label_entry(self, parent, row, label_text, var, width=15):
         """Crée une paire label/entry standardisée et retourne la ligne suivante"""
@@ -240,7 +237,7 @@ class FlightSimulatorGUI:
             if sys.platform == 'win32':
                 try:
                     import ctypes
-                    myappid = 'estaca.trajectoireavion.simulateur.v1'
+                    myappid = 'trajectoireavion.simulateur.v1'
                     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
                 except Exception as e:
                     pass
@@ -787,9 +784,8 @@ class FlightSimulatorGUI:
             config_file = os.path.join(script_dir, 'config.json')
 
             # Stratégie de chargement:
-            # 1) Si un config.json existe à côté du script/exe, on l'utilise (config utilisateur persistante)
+            # 1) Si un config.json existe à côté du script/exe
             # 2) Sinon, si on est en mode PyInstaller, on tente de charger le config.json embarqué dans _MEIPASS
-            #    et on le copie comme base dans le dossier de l'exe pour les prochaines fois
             # 3) Sinon, on garde les valeurs par défaut codées
 
             config = None
@@ -819,7 +815,6 @@ class FlightSimulatorGUI:
                 # Pas de config chargeable, utiliser la config par défaut codée
                 config = DEFAULT_CONFIG
             
-            # À partir d'ici, appliquer la configuration chargée
             # Charger l'environnement
             env = config.get('environment', {})
             size_x = env.get('size_x', DEFAULT_CONFIG['environment']['size_x'])
@@ -1782,7 +1777,7 @@ def main():
     if sys.platform == 'win32':
         try:
             import ctypes
-            myappid = 'estaca.trajectoireavion.simulateur.v1'
+            myappid = 'trajectoireavion.simulateur.v1'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         except Exception:
             pass

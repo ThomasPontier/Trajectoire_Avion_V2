@@ -1,6 +1,6 @@
 """
 Module de création d'icône multi-résolutions pour Windows
-Convertit un fichier PNG en fichier ICO avec plusieurs tailles
+
 """
 
 import os
@@ -8,16 +8,6 @@ from PIL import Image
 
 
 def create_multi_resolution_ico(png_path, ico_path):
-    """
-    Crée un fichier ICO multi-résolutions à partir d'un PNG
-    
-    Args:
-        png_path (str): Chemin vers le fichier PNG source
-        ico_path (str): Chemin de sortie pour le fichier ICO
-    
-    Returns:
-        bool: True si succès, False sinon
-    """
     try:
         # Charger l'image PNG
         with Image.open(png_path) as img:
@@ -75,17 +65,6 @@ def create_multi_resolution_ico(png_path, ico_path):
 
 
 def create_simple_ico(png_path, ico_path):
-    """
-    Crée un fichier ICO simple (une seule taille) à partir d'un PNG
-    Version de fallback si la création multi-résolutions échoue
-    
-    Args:
-        png_path (str): Chemin vers le fichier PNG source
-        ico_path (str): Chemin de sortie pour le fichier ICO
-    
-    Returns:
-        bool: True si succès, False sinon
-    """
     try:
         with Image.open(png_path) as img:
             # Convertir en RGBA

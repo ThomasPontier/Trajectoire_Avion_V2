@@ -129,7 +129,7 @@ def build_executable():
     data_files = ['--add-data=config.json;.']
     if os.path.exists('logo.ico'):
         data_files.append('--add-data=logo.ico;.')
-        print("" logo.ico inclus")
+        print(" logo.ico inclus")
     if os.path.exists('logo.png'):
         data_files.append('--add-data=logo.png;.')
         print("logo.png inclus")
@@ -200,16 +200,16 @@ def build_executable():
 if __name__ == "__main__":
     print("""
     ╔══════════════════════════════════════════════════════════════════╗
-    ║     SIMULATEUR DE TRAJECTOIRE D'AVION - BUILD EXÉCUTABLE        ║
-    ║                      Projet P21 - ESTACA                         ║
+    ║     SIMULATEUR DE TRAJECTOIRE D'AVION - BUILD EXÉCUTABLE         ║
+    ║                      Projet P2I                                  ║
     ╚══════════════════════════════════════════════════════════════════╝
     """)
     
     success = build_executable()
     
     if success:
-        print("\n✨ Build terminé avec succès !")
-        print("🚀 Vous pouvez maintenant distribuer l'exécutable\n")
+        print("\n Build terminé avec succès !")
+        print(" Vous pouvez maintenant distribuer l'exécutable\n")
         sys.exit(0)
     else:
         print("\nLe build a echoue. Verifiez les messages d'erreur ci-dessus.\n")

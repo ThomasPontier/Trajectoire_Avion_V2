@@ -5,19 +5,11 @@ Module de gestion de l'environnement aérien
 import numpy as np
 
 
-class Environment:
-    """
-    Classe représentant l'espace aérien et les points de navigation
-    """
-    
+class Environment:    
     def __init__(self, size_x=50, size_y=50, size_z=5):
         """
         Initialise l'environnement
         
-        Args:
-            size_x: Largeur de l'espace en km (défaut: 50)
-            size_y: Longueur de l'espace en km (défaut: 50)
-            size_z: Hauteur de l'espace en km (défaut: 5)
         """
         self.size_x = size_x
         self.size_y = size_y

@@ -1,0 +1,202 @@
+<mxfile host="65bd71144e">
+    <diagram id="CompleteExample" name="Exemple Complet Annoté x2">
+        <mxGraphModel dx="1540" dy="1170" grid="0" gridSize="10" guides="1" tooltips="0" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3200" pageHeight="3000" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="150" style="edgeStyle=none;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="43">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="1195.238095238095" y="614.8571428571429" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="44" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=60;" parent="1" vertex="1">
+                    <mxGeometry x="1370" y="650" width="260" height="268" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="OBSTACLE&#xa;Centre" style="ellipse;whiteSpace=wrap;html=1;fillColor=#b85450;strokeColor=#b85450;fontSize=16;fontStyle=1;fontColor=#FFFFFF" parent="1" vertex="1">
+                    <mxGeometry x="1470" y="760" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="106" value="Rayon Obstacle&#xa;R = 2.0 km" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#b85450" vertex="1" parent="1">
+                    <mxGeometry x="1410" y="850" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="107" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#b85450;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1500" y="790" as="sourcePoint"/>
+                        <mxPoint x="1630" y="790" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="108" value="2.0 km" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1520" y="800" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="109" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#00CC00;strokeWidth=4;dashed=1;opacity=70;" vertex="1" parent="1">
+                    <mxGeometry x="1302" y="586" width="388" height="400" as="geometry"/>
+                </mxCell>
+                <mxCell id="110" value="Zone de sécurité&#xa;R + 0.5 km = 2.5 km" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1600" y="882" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="113" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#00CC00;dashed=1;" edge="1" parent="1" target="109">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1428" y="674" as="sourcePoint"/>
+                        <mxPoint x="1440" y="596" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="114" value="Marge&#xa;0.5 km" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1290" y="642" width="90" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#0066CC;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="258" y="844" as="sourcePoint"/>
+                        <mxPoint x="672" y="844" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="51" value="Vol Initial&amp;nbsp;" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="890" width="300" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#9c27b0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="694" y="560" as="sourcePoint"/>
+                        <mxPoint x="1130" y="560" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="53" value="Distance longitudinale avant WP&lt;br&gt;= Rayon × 0.8&lt;br&gt;Ex: 2.0 × 0.8 = 1.6 km" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="430" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="300" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#9c27b0;dashed=1;startArrow=classic;exitX=0.44;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="43">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1182" y="660" as="sourcePoint"/>
+                        <mxPoint x="1182" y="746" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="301" value="Distance WP Entry&lt;br&gt;à axe direct&lt;br&gt;= offset_distance&lt;br&gt;= 2.2 km" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1014" y="664" width="152" height="76" as="geometry"/>
+                </mxCell>
+                <mxCell id="302" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#9c27b0;dashed=1;startArrow=classic;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1848" y="642" as="sourcePoint"/>
+                        <mxPoint x="1847.26" y="744" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="303" value="Distance WP Exit&lt;br&gt;à axe direct&lt;br&gt;= offset_distance&lt;br&gt;= 2.2 km" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1868" y="660" width="144" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="200" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#999999;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="694" y="746" as="sourcePoint"/>
+                        <mxPoint x="2200" y="746" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="201" value="Trajectoire directe&#xa;(sans obstacle)" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=2;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="824" y="750" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="202" value="" style="endArrow=classic;html=1;strokeWidth=4;strokeColor=#ff6600;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1430" y="746" as="sourcePoint"/>
+                        <mxPoint x="1430" y="796" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="203" value="dist_to_segment&#xa;≈ 0.3 km" style="text;html=1;strokeColor=#d79b00;fillColor=#ffe6cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1246" y="753" width="160" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="204" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0066CC;strokeColor=#0066CC;" vertex="1" parent="1">
+                    <mxGeometry x="1490" y="566" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="205" value="Point de&#xa;passage" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#0066CC;" vertex="1" parent="1">
+                    <mxGeometry x="1420" y="530" width="100" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="121" value="OFFSET&amp;nbsp;&lt;br&gt;= R + marge - dist_obst&lt;br&gt;= 2.0 + 0.5 - 0.3&lt;br&gt;= 2.2 km&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1898" y="790" width="218" height="98" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#CC6600;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1190" y="514" as="sourcePoint"/>
+                        <mxPoint x="1844" y="518" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="55" value="Arc de contournement" style="text;html=1;strokeColor=#d79b00;fillColor=#ffe6cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="1370" y="356" width="300" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="400" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#FF3366;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1182" y="990" as="sourcePoint"/>
+                        <mxPoint x="1500" y="990" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="401" value="Dist. horizontale&lt;br&gt;Centre → WP Entry&lt;br&gt;= approach_distance&lt;br&gt;= Rayon × 0.8&lt;br&gt;= 2.0 × 0.8 = 1.6 km" style="text;html=1;strokeColor=#d80073;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1220" y="1000" width="220" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="402" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#FF3366;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1182" y="660" as="sourcePoint"/>
+                        <mxPoint x="1182" y="990" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="403" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#FF3366;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1500" y="820" as="sourcePoint"/>
+                        <mxPoint x="1500" y="990" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="404" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#FF3366;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1500" y="990" as="sourcePoint"/>
+                        <mxPoint x="1848" y="994" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="405" value="Dist. horizontale&lt;br&gt;Centre → WP Exit&lt;br&gt;= approach_distance&lt;br&gt;= Rayon × 0.8&lt;br&gt;= 2.0 × 0.8 = 1.6 km" style="text;html=1;strokeColor=#d80073;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=14;fontStyle=1;fontFamily=Consolas;" vertex="1" parent="1">
+                    <mxGeometry x="1590" y="1000" width="220" height="104" as="geometry"/>
+                </mxCell>
+                <mxCell id="406" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#FF3366;dashed=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1847.26" y="670" as="sourcePoint"/>
+                        <mxPoint x="1847.26" y="986" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="1847.26" y="826"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="56" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=4;strokeColor=#CC00CC;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="1898" y="566" as="sourcePoint"/>
+                        <mxPoint x="2368" y="566" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="57" value="Sortie Bézier = offset × 0.8&lt;br&gt;Ex: 2.0 km × 0.8 = 1.6 km&lt;br&gt;(EXIT_BEZIER_FACTOR)" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=16;fontStyle=1;fontFamily=Consolas;" parent="1" vertex="1">
+                    <mxGeometry x="2020" y="430" width="300" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="48" value="" style="curved=1;endArrow=classic;html=1;strokeWidth=8;strokeColor=#0066CC;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="280" y="740" as="sourcePoint"/>
+                        <mxPoint x="2370" y="740" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="460" y="750"/>
+                            <mxPoint x="694" y="746"/>
+                            <mxPoint x="910" y="670"/>
+                            <mxPoint x="1160" y="616"/>
+                            <mxPoint x="1310" y="590"/>
+                            <mxPoint x="1500" y="576"/>
+                            <mxPoint x="1690" y="590"/>
+                            <mxPoint x="1836" y="600"/>
+                            <mxPoint x="1952" y="622"/>
+                            <mxPoint x="2090" y="670"/>
+                            <mxPoint x="2200" y="710"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="43" value="WP&lt;br&gt;Entry" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=18;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1138" y="560" width="100" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="46" value="WP&lt;div&gt;Exit&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=18;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1798" y="550" width="100" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="End&#xa;Initial&#xa;Flight" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=18;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="630" y="700" width="110" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="178" y="686" width="120" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="47" value="Final" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="2340" y="690" width="120" height="100" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

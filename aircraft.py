@@ -1,12 +1,7 @@
-"""
-Module de gestion de l'avion
-"""
-
 import numpy as np
 
 
 class AircraftType:
-    """Types d'avions avec leurs spécifications"""
     
     LIGHT = "light"
     COMMERCIAL = "commercial"
@@ -68,8 +63,6 @@ class Aircraft:
             speed: Vitesse en km/h
             heading: Cap initial en degrés (0° = Nord, 90° = Est)
             aircraft_type: Type d'avion ("light", "commercial", "cargo")
-            max_climb_slope: Pente maximale de montée en degrés (optionnel, sinon utilise celle du type)
-            max_descent_slope: Pente maximale de descente en degrés (optionnel, sinon utilise celle du type)
         """
         self.position = np.array(position, dtype=float)
         self.speed = speed  # km/h

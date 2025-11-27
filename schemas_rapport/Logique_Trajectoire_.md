@@ -222,10 +222,6 @@ La trajectoire est construite **point par point** dans une boucle unique où :
 - **Coordonnée Z** : Calculée via profil 3 phases (palier/transition/descente)
 - **Assignation** : `[x, y, z]` simultanée pour chaque point
 
-**Il n'y a PAS de séparation temporelle** :
-- ❌ Pas de trajectoire XY générée d'abord
-- ❌ Pas de fusion ultérieure avec Z
-- ✅ Calcul et assemblage **simultanés** dans la même itération
 
 **Indépendance algorithmique** (pas temporelle) :
 - La formule XY (Bézier) ne dépend pas de Z
